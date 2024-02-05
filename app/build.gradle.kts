@@ -23,8 +23,8 @@ dependencies {
     implementation("com.google.guava:guava:31.1-jre")
 
     // HDF5 Handling
-    // https://mvnrepository.com/artifact/cisd/jhdf5
-    implementation('cisd:jhdf5:19.04.1')
+   // https://mvnrepository.com/artifact/cisd/jhdf5
+    implementation("cisd:jhdf5:19.04.0")
 
 }
 
