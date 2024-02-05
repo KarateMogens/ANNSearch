@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import ch.systemsx.cisd.hdf5.io.*;
+
+
 //ADD COMMENT HERE
 
 public class EnsembleHash {

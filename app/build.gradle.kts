@@ -13,6 +13,8 @@ plugins {
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
+    maven("https://maven.scijava.org/content/repositories/public/")
+    
 }
 
 dependencies {
@@ -22,10 +24,8 @@ dependencies {
     // This dependency is used by the application.
     implementation("com.google.guava:guava:31.1-jre")
 
-    // HDF5 Handling
-   // https://mvnrepository.com/artifact/cisd/jhdf5
-    implementation("cisd:jhdf5:19.04.0")
-
+    // https://mvnrepository.com/artifact/cisd/jhdf5
+    implementation("cisd:jhdf5:19.04.1")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

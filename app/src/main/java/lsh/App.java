@@ -3,6 +3,10 @@
  */
 package lsh;
 
+import java.io.File;
+
+import ch.systemsx.cisd.hdf5.*;
+
 public class App {
     public String getGreeting() {
         return "Hello World!";
@@ -10,5 +14,8 @@ public class App {
 
     public static void main(String[] args) {
         System.out.println(new App().getGreeting());
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File("app/src/main/resources/fashion-mnist-784-euclidean.hdf5"));
+        float[][] test = reader.readFloatMatrix("test");
+        System.out.println(test[8402][502]);
     }
 }

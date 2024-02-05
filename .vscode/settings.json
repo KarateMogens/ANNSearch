@@ -1,4 +1,9 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "src/main/libraries/jhdf5-19.04.1.jar",
+        "app/src/main/libraries/jhdf5-19.04.1.jar"
+    ]
 }
