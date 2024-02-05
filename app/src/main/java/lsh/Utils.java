@@ -24,4 +24,6 @@ public class Utils {
 
         return -1.0;
     }
+
+    //NEW METHOD HERE
 }
