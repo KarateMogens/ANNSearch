@@ -4,18 +4,37 @@
 package lsh;
 
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Set;
 
 import ch.systemsx.cisd.hdf5.*;
 
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File("app/src/main/resources/fashion-mnist-784-euclidean.hdf5"));
+     
+
+        String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean.hdf5";
+
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
         float[][] test = reader.readFloatMatrix("test");
-        System.out.println(test[8402][502]);
+        int[][] neighbors = reader.readIntMatrix("neighbors");
+        
+        NearestNeighborSearch mySearch = new NearestNeighborSearch(5, 1, 50.0f, FILEPATH);
+        Set<Integer> locatedNeighbors = mySearch.search(test[0], 10);
+
+        List<Integer> actualNeighbors = new LinkedList<>();
+        for (int i : neighbors[0]) {
+            actualNeighbors.add(i);
+        }
+        
+        for (Integer neighbor : locatedNeighbors) {
+            if (actualNeighbors.contains(neighbor)) {
+                System.out.println("1");
+            }
+        }
     }
 }

@@ -1,37 +1,32 @@
 package lsh;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
 
-import org.apache.commons.io.output.StringBuilderWriter;
 
 public class EnsembleHash {
 
     private List<HashFunction> hashFunctions;
     private Map<String, List<Integer>> hashIndex;
-    private float[][] corpusMatrix;
-    
-    public EnsembleHash(int k, float[][] corpusMatrix, double r) {
+
+    public EnsembleHash(int d, int K, double r) {
 
         hashIndex = new HashMap<>();
-        this.corpusMatrix = corpusMatrix;
-    
+
         hashFunctions = new LinkedList<>();
-        for (int i = 0; i < k; i++) {
-            hashFunctions.add(new HashFunction(corpusMatrix[0].length, r));
+        for (int i = 0; i < K; i++) {
+            hashFunctions.add(new HashFunction(d, r));
         }
 
     }
 
-    public void buildIndex() {
+    public void fit(float[][] corpusMatrix) {
         for (int cIndex = 0; cIndex < corpusMatrix.length; cIndex++) {
             float[] cVec = corpusMatrix[cIndex];
 
-           
             String label = getLabel(cVec);
 
             // Add index to partition
@@ -44,7 +39,13 @@ public class EnsembleHash {
             }
             partition.add(cIndex);
         }
-        System.out.println(hashIndex.toString());
+    }
+
+    public List<Integer> query(float[] qVec) {
+
+        String label = getLabel(qVec);
+        return hashIndex.get(label);
+
     }
 
     private String getLabel(float[] vec) {
@@ -53,15 +54,8 @@ public class EnsembleHash {
         for (HashFunction hashFunction : hashFunctions) {
             strBuild.append(hashFunction.hash(vec));
         }
-        
-        return strBuild.toString();
-    }
 
-    public int[] query(float[] qVec) {
-    
-        // TO IMPLEMENT
-        int[] returnValue = {1,2,3};
-        return returnValue;
+        return strBuild.toString();
     }
 
     class HashFunction {

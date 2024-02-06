@@ -1,5 +1,10 @@
 package lsh;
 
+import java.util.Collection;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.HashSet;
+
 public class Utils {
     
 
@@ -19,11 +24,82 @@ public class Utils {
     }
 
     public static float euclideanDistance(float[] aVec, float[] bVec) {
+        
+        if (aVec.length != bVec.length) {
+            throw new IllegalArgumentException("Vectors of unequal length passed");
+        }
 
-        // To be implemented
+        float squaredDistance = 0.0f;
+        for (int i = 0; i < bVec.length; i++) {
+            squaredDistance += Math.pow(aVec[i]-bVec[i], 2);
+        }
+        return (float) Math.sqrt(squaredDistance);
 
-        return -1.0f;
     }
 
+    public static Set<Integer> bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
+        PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
+
+        for (Integer index : candidateSet) {
+            float distance = euclideanDistance(qVec, corpusMatrix[index]);
+            maxHeap.add(new Distance(index, distance));
+        }
+
+        Set<Integer> kNeighborSet = new HashSet<>();
+        
+        for (int i = 0; i < k; i++) {
+            kNeighborSet.add(maxHeap.poll().getcIndex());
+        }
+        
+        return kNeighborSet;
+    }
+
+    public static Set<Integer> bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
+        PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
+
+        for (int index = 0; index < corpusMatrix.length; index++) {
+            float distance = euclideanDistance(qVec, corpusMatrix[index]);
+            maxHeap.add(new Distance(index, distance));
+        }
+
+        Set<Integer> kNeighborSet = new HashSet<>();
+        
+        for (int i = 0; i < k; i++) {
+            kNeighborSet.add(maxHeap.poll().getcIndex());
+        }
+        
+        return kNeighborSet;
+    }
+
+    static class Distance implements Comparable<Distance>{
+
+        private int cIndex;
+        private float distanceToQ;
+
+        public int getcIndex() {
+            return cIndex;
+        }
+
+        public float getDistanceToQ() {
+            return distanceToQ;
+        }
+
+        public Distance(int cIndex, float distanceToQ) {
+            this.cIndex = cIndex;
+            this.distanceToQ = distanceToQ;
+        }
+
+        public int compareTo(Distance that) {
+
+            if (distanceToQ < that.getDistanceToQ()) {
+                return -1;
+            } else if (distanceToQ > that.getDistanceToQ()) {
+                return 1;
+            }
+            return 0;
+
+
+        }
+    }
     //NEW METHOD HERE
 }
