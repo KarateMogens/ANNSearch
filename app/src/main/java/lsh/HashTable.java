@@ -8,12 +8,12 @@ import java.util.HashMap;
 import java.util.Random;
 
 
-public class EnsembleHash implements Serializable {
+public class HashTable implements Serializable {
 
     private List<HashFunction> hashFunctions;
     private Map<String, List<Integer>> hashIndex;
 
-    public EnsembleHash(int d, int K, double r) {
+    public HashTable(int d, int K, double r) {
 
         hashIndex = new HashMap<>();
 

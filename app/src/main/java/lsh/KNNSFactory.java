@@ -1,11 +1,5 @@
 package lsh;
 
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.HashSet;
-import java.util.List;
-
 // HDF5 Handling
 import ch.systemsx.cisd.hdf5.HDF5FactoryProvider;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
@@ -20,73 +14,44 @@ import java.io.ObjectInputStream;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 
-public class NearestNeighborSearch {
+public class KNNSFactory {
     
-    private List<EnsembleHash> allEnsembleHash;
-    private float[][] corpusMatrix;
-    private String DATADIRECTORY;
-    private String DATASET;
+    private static final KNNSFactory factory = new KNNSFactory();
+    private static final String RESOURCEDIRECTORY = "src/main/resources/";
 
-    //Hyperparameters
-    private int L;
-    private int K;
-    private float r;
+    private KNNSFactory() {}
 
-    public NearestNeighborSearch(int L, int K, float r, String dataset) throws FileNotFoundException {
-        this.DATASET = dataset;
-        this.DATADIRECTORY = String.format("src/main/resources/%s/", dataset.substring(0, dataset.lastIndexOf(".")));
-        this.L = L;
-        this.K = K;
-        this.r = r;
-        
+    public static KNNSFactory getInstance() {
+        return factory;
+    }
+
+    // ------------ CLASSIC LSH ------------
+
+    public ClassicLSH getClassicLSH(int L, int K, float r, String dataset) {
+
+        final String DATASET = dataset;
+        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", dataset.substring(0, dataset.lastIndexOf(".")));
+
         // Check if corpus file exists
         if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
             throw new FileNotFoundException("");
         }
 
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
-        corpusMatrix = reader.readFloatMatrix("train");
+        float[][] corpusMatrix = reader.readFloatMatrix("train");
 
-        File datastructure = getDatastructure();
+        File datastructure = getDatastructure(DATADIRECTORY);
         if (datastructure == null) {
             buildIndexStructure();
             writeToDisk();
         } else {
             readFromDisk(datastructure);
         }
-    }
 
-    private void buildIndexStructure() {
-
-        
-        int d = corpusMatrix[0].length;
-
-        allEnsembleHash = new LinkedList<>();
-        for (int i = 0; i < L; i++) {
-            EnsembleHash hashTable = new EnsembleHash(d, K, r);
-            hashTable.fit(corpusMatrix);
-            allEnsembleHash.add(hashTable);
-        }
-    }
-
-    public Set<Integer> search(float[] qVec, int k) {
-
-        Set<Integer> candidateSet = new HashSet<>();
-        for (EnsembleHash hash : allEnsembleHash) {
-            List<Integer> queryResult = hash.query(qVec);
-            if (queryResult == null) {
-                continue;
-            }
-            candidateSet.addAll(hash.query(qVec));
-        }
-
-        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
 
-    // ------------ IO HANDLING ------------
-
-    private void writeToDisk() {
+    private void writeToDiskCLSH() {
         try {
             ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(DATADIRECTORY + String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L)));
             myStream.writeObject(allEnsembleHash);
@@ -97,10 +62,10 @@ public class NearestNeighborSearch {
         }
     }
 
-    private void readFromDisk(File targetFile) {
+    private void readFromDiskCLSH(File targetFile) {
         try {
             ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(DATADIRECTORY + targetFile.getName()));
-            List<EnsembleHash> datastructure = (List<EnsembleHash>) myStream.readObject();
+            List<HashTable> datastructure = (List<HashTable>) myStream.readObject();
             this.allEnsembleHash = datastructure.subList(0, L);
             myStream.close();
         } catch (IOException e) {
@@ -110,9 +75,9 @@ public class NearestNeighborSearch {
         }
     }
 
-    private File getDatastructure() {
+    private File getDatastructureCLSH(String dataDirectory) {
         
-        File directory = new File(DATADIRECTORY);
+        File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
         String filePrefix = String.format("searchType-%1$d-%2$f-", K, r);
@@ -135,5 +100,6 @@ public class NearestNeighborSearch {
         return null;
         
     }
+
 
 }
