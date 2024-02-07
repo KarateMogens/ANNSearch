@@ -1,9 +1,12 @@
 package lsh;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.HashSet;
+
+
 
 public class Utils {
     
@@ -71,6 +74,15 @@ public class Utils {
         return kNeighborSet;
     }
 
+    public static boolean fileExists(String filePathString) {
+
+        File filePath = new File(filePathString);
+        if (filePath.exists() && !filePath.isDirectory()) {
+            return true;
+        }
+        return false;
+    }
+
     static class Distance implements Comparable<Distance>{
 
         private int cIndex;
@@ -101,5 +113,5 @@ public class Utils {
 
         }
     }
-    //NEW METHOD HERE
+
 }

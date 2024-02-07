@@ -24,8 +24,16 @@ dependencies {
     // This dependency is used by the application.
     implementation("com.google.guava:guava:31.1-jre")
 
+    // HDF5 file handling
     // https://mvnrepository.com/artifact/cisd/jhdf5
     implementation("cisd:jhdf5:19.04.1")
+
+    //FST - Fast Serialization
+    // https://mvnrepository.com/artifact/de.ruedigermoeller/fst
+    // Documentation: https://javadoc.io/doc/de.ruedigermoeller/fst/2.57/index.html
+    // https://mvnrepository.com/artifact/de.ruedigermoeller/fst
+    implementation("de.ruedigermoeller:fst:3.0.4-jdk17")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

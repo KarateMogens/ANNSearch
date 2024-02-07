@@ -3,11 +3,12 @@ package lsh;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
 
 
-public class EnsembleHash {
+public class EnsembleHash implements Serializable {
 
     private List<HashFunction> hashFunctions;
     private Map<String, List<Integer>> hashIndex;
@@ -58,7 +59,7 @@ public class EnsembleHash {
         return strBuild.toString();
     }
 
-    class HashFunction {
+    class HashFunction implements Serializable {
 
         private float[] aVec;
         private double b;
