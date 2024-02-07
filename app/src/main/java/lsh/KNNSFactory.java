@@ -12,7 +12,10 @@ import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.FileInputStream;
-import java.io.ObjectInputStream;
+
+// Other imports
+import java.util.List;
+
 
 public class KNNSFactory {
     
@@ -27,7 +30,7 @@ public class KNNSFactory {
 
     // ------------ CLASSIC LSH ------------
 
-    public ClassicLSH getClassicLSH(int L, int K, float r, String dataset) {
+    public ClassicLSH getClassicLSH(int L, int K, float r, String dataset) throws FileNotFoundException {
 
         final String DATASET = dataset;
         final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", dataset.substring(0, dataset.lastIndexOf(".")));
@@ -40,21 +43,24 @@ public class KNNSFactory {
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
         float[][] corpusMatrix = reader.readFloatMatrix("train");
 
-        File datastructure = getDatastructure(DATADIRECTORY);
+        ClassicLSH classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
+
+        File datastructure = getDatastructureCLSH(DATADIRECTORY, L, K, r);
         if (datastructure == null) {
-            buildIndexStructure();
-            writeToDisk();
+            List<HashTable> indexStructure = classicLSH.buildIndexStructure();
+            String fileName = String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L);
+            writeToDiskCLSH(indexStructure, DATADIRECTORY, fileName);
         } else {
-            readFromDisk(datastructure);
+            classicLSH.setIndexStructure(readFromDiskCLSH(DATADIRECTORY, datastructure, L));
         }
 
-
+        return classicLSH;
     }
 
-    private void writeToDiskCLSH() {
+    private void writeToDiskCLSH(List<HashTable> indexStructure, String dataDirectory, String fileName) {
         try {
-            ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(DATADIRECTORY + String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L)));
-            myStream.writeObject(allEnsembleHash);
+            ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(dataDirectory + fileName)) ;
+            myStream.writeObject(indexStructure);
             myStream.flush();
             myStream.close();
         } catch (IOException e) {
@@ -62,26 +68,24 @@ public class KNNSFactory {
         }
     }
 
-    private void readFromDiskCLSH(File targetFile) {
-        try {
-            ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(DATADIRECTORY + targetFile.getName()));
+    private List<HashTable> readFromDiskCLSH(String dataDirectory, File targetFile, int L) {
+        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(dataDirectory + targetFile.getName()));) {
             List<HashTable> datastructure = (List<HashTable>) myStream.readObject();
-            this.allEnsembleHash = datastructure.subList(0, L);
-            myStream.close();
+            return datastructure.subList(0, L);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
-    private File getDatastructureCLSH(String dataDirectory) {
+    private File getDatastructureCLSH(String dataDirectory, int L, int K, float r) {
         
         File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
         String filePrefix = String.format("searchType-%1$d-%2$f-", K, r);
-        System.out.println("FILEPREFIX:" + filePrefix);
 
         for (File file : files) {
             String fileName = file.getName();

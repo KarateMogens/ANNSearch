@@ -25,11 +25,12 @@ public class App {
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
         float[][] test = reader.readFloatMatrix("test");
         int[][] neighbors = reader.readIntMatrix("neighbors");
-        NearestNeighborSearch mySearch;
         reader.close();
+        KNNSFactory knnsFactory = KNNSFactory.getInstance();
+        ClassicLSH mySearch;
 
         try {
-            mySearch = new NearestNeighborSearch(6, 1, 25.0f, FILENAME);
+            mySearch = knnsFactory.getClassicLSH(12, 1, 25.0f, FILENAME);
             Set<Integer> locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : neighbors[0]) {
