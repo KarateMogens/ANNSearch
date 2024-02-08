@@ -15,6 +15,9 @@ import java.io.FileInputStream;
 
 // Other imports
 import java.util.List;
+import java.util.regex.*;
+
+
 
 
 public class KNNSFactory {
@@ -26,6 +29,26 @@ public class KNNSFactory {
 
     public static KNNSFactory getInstance() {
         return factory;
+    }
+
+    private void writeToDisk(Object object, String dataDirectory, String fileName) {
+        try (ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(dataDirectory + fileName))) {
+            myStream.writeObject(object);
+            myStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Object readFromDisk(String dataDirectory, File targetFile) {
+        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(dataDirectory + targetFile.getName()))) {
+            return myStream.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     // ------------ CLASSIC LSH ------------
@@ -40,64 +63,43 @@ public class KNNSFactory {
             throw new FileNotFoundException("");
         }
 
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
-        float[][] corpusMatrix = reader.readFloatMatrix("train");
+        ClassicLSH classicLSH;
 
-        ClassicLSH classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
+        File datastructure = getSuitableCLSH(DATADIRECTORY, L, K, r);
 
-        File datastructure = getDatastructureCLSH(DATADIRECTORY, L, K, r);
         if (datastructure == null) {
-            List<HashTable> indexStructure = classicLSH.buildIndexStructure();
-            String fileName = String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L);
-            writeToDiskCLSH(indexStructure, DATADIRECTORY, fileName);
+            IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
+            float[][] corpusMatrix = reader.readFloatMatrix("train");
+            classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
+            String fileName = String.format("ClassicLSH_%1$d_%2$f_%3$d.ser", K, r, L);
+            writeToDisk(classicLSH, DATADIRECTORY, fileName);
         } else {
-            classicLSH.setIndexStructure(readFromDiskCLSH(DATADIRECTORY, datastructure, L));
+            classicLSH = (ClassicLSH) readFromDisk(DATADIRECTORY, datastructure);
         }
 
         return classicLSH;
     }
 
-    private void writeToDiskCLSH(List<HashTable> indexStructure, String dataDirectory, String fileName) {
-        try {
-            ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(dataDirectory + fileName)) ;
-            myStream.writeObject(indexStructure);
-            myStream.flush();
-            myStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private List<HashTable> readFromDiskCLSH(String dataDirectory, File targetFile, int L) {
-        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(dataDirectory + targetFile.getName()));) {
-            List<HashTable> datastructure = (List<HashTable>) myStream.readObject();
-            return datastructure.subList(0, L);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private File getDatastructureCLSH(String dataDirectory, int L, int K, float r) {
+    private File getSuitableCLSH(String dataDirectory, int L, int K, float r) {
         
         File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
-        String filePrefix = String.format("searchType-%1$d-%2$f-", K, r);
+        Pattern pattern = Pattern.compile("ClassicLSH_(\\d+)_(\\d+,\\d+)_(\\d+).ser");
 
         for (File file : files) {
             String fileName = file.getName();
 
-            if (!fileName.startsWith(filePrefix)) {
+            Matcher match = pattern.matcher(fileName);
+
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
                 continue;
             }
-         
-            int size = Integer.parseInt(fileName.substring(filePrefix.length(), fileName.lastIndexOf("."))); 
-            if (size < L) {
+
+            if (Integer.parseInt(match.group(3)) < L) {
                 continue;
             }
+
             return file;
         }
 
@@ -105,5 +107,64 @@ public class KNNSFactory {
         
     }
 
+    // ------------ NATURAL CLASSIFIER LSH ------------
+
+    public NCLSH getNCLSH(int L, int K, float r, int k, String dataset) throws FileNotFoundException {
+
+        final String DATASET = dataset;
+        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", dataset.substring(0, dataset.lastIndexOf(".")));
+
+        // Check if corpus file exists
+        if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
+             throw new FileNotFoundException("");
+        }
+
+        NCLSH classicLSH;
+
+        File datastructure = getSuitableNCLSH(DATADIRECTORY, L, K, r, k);
+
+        // if (datastructure == null) {
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
+        float[][] corpusMatrix = reader.readFloatMatrix("train");
+        //     classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
+        //     String fileName = String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L);
+        //     writeToDisk(classicLSH, DATADIRECTORY, fileName);
+        // } else {
+        //     classicLSH = (ClassicLSH) readFromDisk(DATADIRECTORY, datastructure);
+        // }
+
+        return new NCLSH(L, K, r, corpusMatrix, k);
+    }
+
+    private File getSuitableNCLSH(String dataDirectory, int L, int K, float r, int k) {
+        
+        File directory = new File(dataDirectory);
+        File[] files = directory.listFiles();
+
+        Pattern pattern = Pattern.compile("NCLSH_(\\d+)_(\\d+,\\d+)_(\\d+)_(\\d+).ser");
+
+        for (File file : files) {
+            String fileName = file.getName();
+
+            Matcher match = pattern.matcher(fileName);
+
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2)) != r) {
+                continue;
+            }
+
+            if (Integer.parseInt(match.group(3)) < L) {
+                continue;
+            }
+
+            if (Integer.parseInt(match.group(4)) < k) {
+                continue;
+            }
+
+            return file;
+        }
+
+        return null;
+        
+    }
 
 }

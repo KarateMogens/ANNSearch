@@ -27,11 +27,11 @@ public class App {
         int[][] neighbors = reader.readIntMatrix("neighbors");
         reader.close();
         KNNSFactory knnsFactory = KNNSFactory.getInstance();
-        ClassicLSH mySearch;
+        ANNSearchable mySearch;
 
         try {
-            mySearch = knnsFactory.getClassicLSH(12, 1, 25.0f, FILENAME);
-            Set<Integer> locatedNeighbors = mySearch.search(test[0], 10);
+            mySearch = knnsFactory.getClassicLSH(3, 1, 25.0f, FILENAME);
+            int[] locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : neighbors[0]) {
                 actualNeighbors.add(i);

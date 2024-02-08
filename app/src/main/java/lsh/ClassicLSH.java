@@ -4,31 +4,29 @@ import java.util.Set;
 import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.List;
+import java.io.Serializable;
 
-public class ClassicLSH {
+public class ClassicLSH implements ANNSearchable, Serializable{
     
-    private List<HashTable> hashTableEnsemble;
-    private float[][] corpusMatrix;
-    private String DATADIRECTORY;
-    private String DATASET;
+    protected List<HashTable> hashTableEnsemble;
+    protected float[][] corpusMatrix;
+    protected String DATADIRECTORY;
+    protected String DATASET;
 
     //Hyperparameters
-    private int L;
-    private int K;
-    private float r;
+    protected int L;
+    protected int K;
+    protected float r;
 
     public ClassicLSH(int L, int K, float r, float[][] corpusMatrix) {
         this.corpusMatrix = corpusMatrix;
         this.L = L;
         this.K = K;
         this.r = r;
+        buildIndexStructure();
     }
 
-    public void setIndexStructure(List<HashTable> hashTableEnsemble) {
-        this.hashTableEnsemble = hashTableEnsemble;
-    }
-
-    public List<HashTable> buildIndexStructure() {
+    private void buildIndexStructure() {
         
         int d = corpusMatrix[0].length;
 
@@ -38,11 +36,15 @@ public class ClassicLSH {
             hashTable.fit(corpusMatrix);
             hashTableEnsemble.add(hashTable);
         }
-
-        return hashTableEnsemble;
     }
 
-    public Set<Integer> search(float[] qVec, int k) {
+    public void reduceIndexSize(int L) {
+        hashTableEnsemble = hashTableEnsemble.subList(0, L);
+    }
+
+    
+
+    public int[] search(float[] qVec, int k) {
 
         Set<Integer> candidateSet = new HashSet<>();
         for (HashTable hash : hashTableEnsemble) {

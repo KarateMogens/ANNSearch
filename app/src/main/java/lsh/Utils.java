@@ -1,10 +1,12 @@
 package lsh;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
 
 
 
@@ -40,7 +42,7 @@ public class Utils {
 
     }
 
-    public static Set<Integer> bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
+    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Iterable<Integer> candidateSet, int k) {
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
         for (Integer index : candidateSet) {
@@ -48,16 +50,16 @@ public class Utils {
             maxHeap.add(new Distance(index, distance));
         }
 
-        Set<Integer> kNeighborSet = new HashSet<>();
+        int[] kNeighbors = new int[k];
         
         for (int i = 0; i < k; i++) {
-            kNeighborSet.add(maxHeap.poll().getcIndex());
+            kNeighbors[i] = maxHeap.poll().getcIndex();
         }
         
-        return kNeighborSet;
+        return kNeighbors;
     }
 
-    public static Set<Integer> bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
+    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
         for (int index = 0; index < corpusMatrix.length; index++) {
@@ -65,22 +67,13 @@ public class Utils {
             maxHeap.add(new Distance(index, distance));
         }
 
-        Set<Integer> kNeighborSet = new HashSet<>();
+        int[] kNeighbors = new int[k];
         
         for (int i = 0; i < k; i++) {
-            kNeighborSet.add(maxHeap.poll().getcIndex());
+            kNeighbors[i] = maxHeap.poll().getcIndex();
         }
         
-        return kNeighborSet;
-    }
-
-    public static boolean fileExists(String filePathString) {
-
-        File filePath = new File(filePathString);
-        if (filePath.exists() && !filePath.isDirectory()) {
-            return true;
-        }
-        return false;
+        return kNeighbors;
     }
 
     static class Distance implements Comparable<Distance>{
@@ -112,6 +105,59 @@ public class Utils {
 
 
         }
+    }
+
+    public static boolean fileExists(String filePathString) {
+
+        File filePath = new File(filePathString);
+        if (filePath.exists() && !filePath.isDirectory()) {
+            return true;
+        }
+        return false;
+    }
+
+    private static int partition(Vote[] votes, int hi, int lo) {
+        int pivotValue = votes[hi].getVotes();
+        int pivotLoc = lo;
+
+        for (int i = lo; i < hi; i++) {
+            if (votes[i].getVotes() < pivotValue){
+                Vote temp = votes[i];
+                votes[i] = votes[pivotLoc];
+                votes[pivotLoc] = temp;
+                pivotLoc++;            
+            }
+        }
+
+        Vote temp = votes[hi];
+        votes[hi] = votes[pivotLoc];
+        votes[pivotLoc] = temp;
+        
+        return pivotLoc;     
+    }
+
+    public static int quickSelect(Vote[] votes, int lo, 
+                                  int high, int k) 
+    { 
+        // find the partition 
+        int partition = partition(votes, lo, high); 
+  
+        // if partition value is equal to the kth position, 
+        // return value at k. 
+        if (partition == k - 1) {
+            return partition; 
+        }
+            
+        // if partition value is less than kth position, 
+        // search right side of the array. 
+        else if (partition < k - 1) {
+            return quickSelect(votes, partition + 1, high, k); 
+        }
+        // if partition value is more than kth position, 
+        // search left side of the array. 
+        else {
+            return quickSelect(votes, lo, partition - 1, k);
+        } 
     }
 
 }
