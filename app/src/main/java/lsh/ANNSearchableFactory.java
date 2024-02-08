@@ -18,16 +18,14 @@ import java.util.List;
 import java.util.regex.*;
 
 
-
-
-public class KNNSFactory {
+public class ANNSearchableFactory {
     
-    private static final KNNSFactory factory = new KNNSFactory();
+    private static final ANNSearchableFactory factory = new ANNSearchableFactory();
     private static final String RESOURCEDIRECTORY = "src/main/resources/";
 
-    private KNNSFactory() {}
+    private ANNSearchableFactory() {}
 
-    public static KNNSFactory getInstance() {
+    public static ANNSearchableFactory getInstance() {
         return factory;
     }
 
@@ -119,21 +117,21 @@ public class KNNSFactory {
              throw new FileNotFoundException("");
         }
 
-        NCLSH classicLSH;
+        NCLSH naturalClassifierLSH;
 
         File datastructure = getSuitableNCLSH(DATADIRECTORY, L, K, r, k);
 
-        // if (datastructure == null) {
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
-        float[][] corpusMatrix = reader.readFloatMatrix("train");
-        //     classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
-        //     String fileName = String.format("searchType-%1$d-%2$f-%3$d.ser", K, r, L);
-        //     writeToDisk(classicLSH, DATADIRECTORY, fileName);
-        // } else {
-        //     classicLSH = (ClassicLSH) readFromDisk(DATADIRECTORY, datastructure);
-        // }
+        if (datastructure == null) {
+            IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
+            float[][] corpusMatrix = reader.readFloatMatrix("train");
+            naturalClassifierLSH = new NCLSH(L, K, r, corpusMatrix, k);
+            String fileName = String.format("NCLSH_%1$d_%2$f_%3$d_%4$d.ser", K, r, L, k);
+            writeToDisk(naturalClassifierLSH, DATADIRECTORY, fileName);
+        } else {
+            naturalClassifierLSH = (NCLSH) readFromDisk(DATADIRECTORY, datastructure);
+        }
 
-        return new NCLSH(L, K, r, corpusMatrix, k);
+        return naturalClassifierLSH;
     }
 
     private File getSuitableNCLSH(String dataDirectory, int L, int K, float r, int k) {
