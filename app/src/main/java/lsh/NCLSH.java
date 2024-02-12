@@ -12,23 +12,35 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
 
     private int[][] secondaryIndex;
     private int k;
+    
+    public NCLSH(int L, int K, float r, float[][] corpusMatrix, int k, int[][] secondaryIndex) {
+        super(L, K, r, corpusMatrix);
+        this.k = k;
+        this.secondaryIndex = secondaryIndex;
+
+    }
 
     public NCLSH(int L, int K, float r, float[][] corpusMatrix, int k) {
         super(L, K, r, corpusMatrix);
         this.k = k;
-        buildSecondaryIndex();
+        //this.secondaryIndex = Utils.groundTruth(corpusMatrix, k);
     }
 
-    private void buildSecondaryIndex() {
-        int corpusSize = corpusMatrix.length;
-        secondaryIndex = new int[corpusSize][];         
-        for (int i = 0; i < corpusSize; i++) {
-            secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+    public void setSecondaryIndex(int[][] groundTruth) {
+        
+        if (groundTruth[0].length == k) {
+            this.secondaryIndex = groundTruth;
+            return;
         }
-    }
 
-    public void reduceSecondaryIndexSize(int k) {
-        // To implement
+        for (int i = 0; i < groundTruth.length; i++) {
+            int[] temp = new int[k];
+            for (int j = 0; j < k; j++) {
+                temp[j] = groundTruth[i][j];
+            }
+            groundTruth[i] = temp;
+        }
+        this.secondaryIndex = groundTruth;
     }
 
     public int[] search(float[] qVec, int k) {

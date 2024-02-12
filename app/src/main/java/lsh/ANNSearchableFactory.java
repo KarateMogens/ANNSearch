@@ -29,8 +29,8 @@ public class ANNSearchableFactory {
         return factory;
     }
 
-    private void writeToDisk(Object object, String dataDirectory, String fileName) {
-        try (ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(dataDirectory + fileName))) {
+    private void writeToDisk(Object object, String directory, String fileName) {
+        try (ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(directory + fileName))) {
             myStream.writeObject(object);
             myStream.flush();
         } catch (IOException e) {
@@ -38,8 +38,8 @@ public class ANNSearchableFactory {
         }
     }
 
-    private Object readFromDisk(String dataDirectory, File targetFile) {
-        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(dataDirectory + targetFile.getName()))) {
+    private Object readFromDisk(String directory, File targetFile) {
+        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(directory + targetFile.getName()))) {
             return myStream.readObject();
         } catch (IOException e) {
             e.printStackTrace();
@@ -110,18 +110,18 @@ public class ANNSearchableFactory {
     public NCLSH getNCLSH(int L, int K, float r, int k, String dataset) throws FileNotFoundException {
 
         final String DATASET = dataset;
-        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", dataset.substring(0, dataset.lastIndexOf(".")));
+        final String DATASETNAME = dataset.substring(0, dataset.lastIndexOf("."));
+        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", DATASETNAME);
 
         // Check if corpus file exists
         if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
              throw new FileNotFoundException("");
         }
 
+        File datastructure = getSuitableNCLSH(DATADIRECTORY, L, K, r);
         NCLSH naturalClassifierLSH;
-
-        File datastructure = getSuitableNCLSH(DATADIRECTORY, L, K, r, k);
-
         if (datastructure == null) {
+            System.out.println("Data structure is null");
             IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
             float[][] corpusMatrix = reader.readFloatMatrix("train");
             naturalClassifierLSH = new NCLSH(L, K, r, corpusMatrix, k);
@@ -131,22 +131,64 @@ public class ANNSearchableFactory {
             naturalClassifierLSH = (NCLSH) readFromDisk(DATADIRECTORY, datastructure);
         }
 
+        File secondaryIndex = getSecondIndex(DATADIRECTORY, DATASETNAME, k);
+        int[][] secondaryIndexMatrix;
+        if (secondaryIndex == null) {
+            System.out.println("Secondary index is null");
+            secondaryIndexMatrix = Utils.groundTruthParallel(naturalClassifierLSH.getCorpusMatrix(), k);
+            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-%2$d.ser", DATASETNAME, k));
+        } else {
+            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
+        }
+
+        naturalClassifierLSH.setSecondaryIndex(secondaryIndexMatrix);
+
         return naturalClassifierLSH;
     }
 
-    private File getSuitableNCLSH(String dataDirectory, int L, int K, float r, int k) {
+    private File getSecondIndex(String dataDirectory, String dataset, int k) {
+        File directory = new File(dataDirectory);
+        File[] files = directory.listFiles();
+
+        if (files == null) {
+            return null;
+        }
+
+        Pattern pattern = Pattern.compile(dataset + "-groundtruth-(\\d+).ser");
+        System.out.println(pattern.toString());
+
+        for (File file : files) {
+            System.out.println(file.getName());
+            String fileName = file.getName();
+
+            Matcher match = pattern.matcher(fileName);
+
+            if (match.matches() && Integer.parseInt(match.group(1)) >= k) {
+                return file;
+            }
+        }
+
+        return null;
+    }   
+    
+
+    private File getSuitableNCLSH(String dataDirectory, int L, int K, float r) {
         
         File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
-        Pattern pattern = Pattern.compile("NCLSH_(\\d+)_(\\d+,\\d+)_(\\d+)_(\\d+).ser");
+        if (files == null) {
+            return null;
+        }
+
+        Pattern pattern = Pattern.compile("NCLSH_(\\d+)_(\\d+,\\d+)_(\\d+)_\\d+.ser");
 
         for (File file : files) {
             String fileName = file.getName();
 
             Matcher match = pattern.matcher(fileName);
 
-            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2)) != r) {
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
                 continue;
             }
 
@@ -154,10 +196,7 @@ public class ANNSearchableFactory {
                 continue;
             }
 
-            if (Integer.parseInt(match.group(4)) < k) {
-                continue;
-            }
-
+            System.out.println(file.getName());
             return file;
         }
 

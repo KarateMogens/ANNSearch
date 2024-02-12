@@ -38,11 +38,13 @@ public class ClassicLSH implements ANNSearchable, Serializable{
         }
     }
 
+    public float[][] getCorpusMatrix() {
+        return corpusMatrix;
+    }
+
     public void reduceIndexSize(int L) {
         hashTableEnsemble = hashTableEnsemble.subList(0, L);
     }
-
-    
 
     public int[] search(float[] qVec, int k) {
 

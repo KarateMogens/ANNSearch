@@ -5,6 +5,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.HashSet;
 import java.util.List;
 
@@ -159,5 +164,49 @@ public class Utils {
             return quickSelect(votes, lo, partition - 1, k);
         } 
     }
+
+    public static int[][] groundTruth(float[][] corpusMatrix, int k) {
+        int corpusSize = corpusMatrix.length;
+        int[][] secondaryIndex = new int[corpusSize][];         
+        for (int i = 0; i < corpusSize; i++) {
+            secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+        }
+        return secondaryIndex;
+    }
+
+    public static int[][] groundTruthParallel(float[][] corpusMatrix, int k) {
+
+        
+        int corpusSize = corpusMatrix.length;
+        int[][] secondaryIndex = new int[corpusSize][];
+
+        ExecutorService pool = new ForkJoinPool();
+		final int perTask = 1000;
+        final int taskCount = corpusSize/perTask;
+        Future<?>[] myFutures = new Future<?>[taskCount];
+
+		for (int t = 0; t < taskCount; t++) {
+			final int from = perTask * t;
+			final int to = (t+1 == taskCount) ? corpusSize : perTask * (t + 1);
+			myFutures[t] = pool.submit(() -> {
+				for (int i = from; i < to; i++){
+					secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+				}
+                System.out.println("Done");
+            });
+		}
+		try {
+			for (int t = 0; t < taskCount; t++)
+				myFutures[t].get();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} finally {
+			pool.shutdown();
+		}
+		return secondaryIndex;
+    }
+    
 
 }
