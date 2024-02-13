@@ -17,13 +17,13 @@ import java.io.FileInputStream;
 import java.util.List;
 import java.util.regex.*;
 
-
 public class ANNSearchableFactory {
-    
+
     private static final ANNSearchableFactory factory = new ANNSearchableFactory();
     private static final String RESOURCEDIRECTORY = "src/main/resources/";
 
-    private ANNSearchableFactory() {}
+    private ANNSearchableFactory() {
+    }
 
     public static ANNSearchableFactory getInstance() {
         return factory;
@@ -39,7 +39,8 @@ public class ANNSearchableFactory {
     }
 
     private Object readFromDisk(String directory, File targetFile) {
-        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(directory + targetFile.getName()))) {
+        try (ObjectInputStream myStream = new ObjectInputStream(
+                new FileInputStream(directory + targetFile.getName()))) {
             return myStream.readObject();
         } catch (IOException e) {
             e.printStackTrace();
@@ -54,7 +55,8 @@ public class ANNSearchableFactory {
     public ClassicLSH getClassicLSH(int L, int K, float r, String dataset) throws FileNotFoundException {
 
         final String DATASET = dataset;
-        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", dataset.substring(0, dataset.lastIndexOf(".")));
+        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/",
+                dataset.substring(0, dataset.lastIndexOf(".")));
 
         // Check if corpus file exists
         if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
@@ -62,10 +64,10 @@ public class ANNSearchableFactory {
         }
 
         ClassicLSH classicLSH;
-
         File datastructure = getSuitableCLSH(DATADIRECTORY, L, K, r);
 
         if (datastructure == null) {
+            System.out.println("No suitable ClassicLSH found. Constructing new object.");
             IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
             float[][] corpusMatrix = reader.readFloatMatrix("train");
             classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
@@ -73,13 +75,14 @@ public class ANNSearchableFactory {
             writeToDisk(classicLSH, DATADIRECTORY, fileName);
         } else {
             classicLSH = (ClassicLSH) readFromDisk(DATADIRECTORY, datastructure);
+            classicLSH.reduceIndexSize(L);
         }
 
         return classicLSH;
     }
 
     private File getSuitableCLSH(String dataDirectory, int L, int K, float r) {
-        
+
         File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
@@ -87,22 +90,20 @@ public class ANNSearchableFactory {
 
         for (File file : files) {
             String fileName = file.getName();
-
             Matcher match = pattern.matcher(fileName);
-
-            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
                 continue;
             }
 
             if (Integer.parseInt(match.group(3)) < L) {
                 continue;
             }
-
+            System.out.println("Loaded ClassicLSH from storage: " + file.getName());
             return file;
         }
 
         return null;
-        
+
     }
 
     // ------------ NATURAL CLASSIFIER LSH ------------
@@ -115,13 +116,13 @@ public class ANNSearchableFactory {
 
         // Check if corpus file exists
         if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
-             throw new FileNotFoundException("");
+            throw new FileNotFoundException("");
         }
 
         File datastructure = getSuitableNCLSH(DATADIRECTORY, L, K, r);
         NCLSH naturalClassifierLSH;
         if (datastructure == null) {
-            System.out.println("Data structure is null");
+            System.out.println("No suitable NaturalClassifierLSH found. Constructing new object.");
             IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
             float[][] corpusMatrix = reader.readFloatMatrix("train");
             naturalClassifierLSH = new NCLSH(L, K, r, corpusMatrix, k);
@@ -134,7 +135,7 @@ public class ANNSearchableFactory {
         File secondaryIndex = getSecondIndex(DATADIRECTORY, DATASETNAME, k);
         int[][] secondaryIndexMatrix;
         if (secondaryIndex == null) {
-            System.out.println("Secondary index is null");
+            System.out.println("No suitable secondary index found. Constructing new index.");
             secondaryIndexMatrix = Utils.groundTruthParallel(naturalClassifierLSH.getCorpusMatrix(), k);
             writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-%2$d.ser", DATASETNAME, k));
         } else {
@@ -155,25 +156,19 @@ public class ANNSearchableFactory {
         }
 
         Pattern pattern = Pattern.compile(dataset + "-groundtruth-(\\d+).ser");
-        System.out.println(pattern.toString());
-
         for (File file : files) {
-            System.out.println(file.getName());
             String fileName = file.getName();
-
             Matcher match = pattern.matcher(fileName);
-
             if (match.matches() && Integer.parseInt(match.group(1)) >= k) {
                 return file;
             }
         }
 
         return null;
-    }   
-    
+    }
 
     private File getSuitableNCLSH(String dataDirectory, int L, int K, float r) {
-        
+
         File directory = new File(dataDirectory);
         File[] files = directory.listFiles();
 
@@ -188,7 +183,7 @@ public class ANNSearchableFactory {
 
             Matcher match = pattern.matcher(fileName);
 
-            if (!match.matches() || Integer.parseInt(match.group(1)) != K  || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
                 continue;
             }
 
@@ -196,12 +191,12 @@ public class ANNSearchableFactory {
                 continue;
             }
 
-            System.out.println(file.getName());
+            System.out.println("Loaded NCSLH from storage: " + file.getName());
             return file;
         }
 
         return null;
-        
+
     }
 
 }

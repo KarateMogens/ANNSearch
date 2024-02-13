@@ -100,20 +100,16 @@ public class Utils {
         }
 
         public int compareTo(Distance that) {
-
             if (distanceToQ < that.getDistanceToQ()) {
                 return -1;
             } else if (distanceToQ > that.getDistanceToQ()) {
                 return 1;
             }
             return 0;
-
-
         }
     }
 
     public static boolean fileExists(String filePathString) {
-
         File filePath = new File(filePathString);
         if (filePath.exists() && !filePath.isDirectory()) {
             return true;
@@ -121,12 +117,12 @@ public class Utils {
         return false;
     }
 
-    private static int partition(Vote[] votes, int hi, int lo) {
+    private static int partition(Vote[] votes, int lo, int hi) {
         int pivotValue = votes[hi].getVotes();
         int pivotLoc = lo;
 
-        for (int i = lo; i < hi; i++) {
-            if (votes[i].getVotes() < pivotValue){
+        for (int i = lo; i <= hi; i++) {
+            if (votes[i].getVotes() > pivotValue){
                 Vote temp = votes[i];
                 votes[i] = votes[pivotLoc];
                 votes[pivotLoc] = temp;
@@ -137,28 +133,33 @@ public class Utils {
         Vote temp = votes[hi];
         votes[hi] = votes[pivotLoc];
         votes[pivotLoc] = temp;
-        
+        // StringBuilder builder = new StringBuilder();
+        // for (Vote vote : votes) {
+        //     builder.append(" ");
+        //     builder.append(vote.getVotes());
+        // }
+        // System.out.println(builder.toString());
         return pivotLoc;     
     }
 
     public static int quickSelect(Vote[] votes, int lo, 
-                                  int high, int k) 
+                                  int hi, int k) 
     { 
         // find the partition 
-        int partition = partition(votes, lo, high); 
+        int partition = partition(votes, lo, hi); 
   
         // if partition value is equal to the kth position, 
-        // return value at k. 
+        // return index of partitioning element 
         if (partition == k - 1) {
             return partition; 
         }
             
-        // if partition value is less than kth position, 
+        // if partition index is less than kth position, 
         // search right side of the array. 
         else if (partition < k - 1) {
-            return quickSelect(votes, partition + 1, high, k); 
+            return quickSelect(votes, partition + 1, hi, k); 
         }
-        // if partition value is more than kth position, 
+        // if partition index is more than kth position, 
         // search left side of the array. 
         else {
             return quickSelect(votes, lo, partition - 1, k);

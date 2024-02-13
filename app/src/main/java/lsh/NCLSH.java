@@ -45,6 +45,7 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
 
     public int[] search(float[] qVec, int k) {
 
+        final int candidateSetSize = 100*k;
         
         Map<Integer,Integer> voteMap = new HashMap<>(); 
         for (HashTable hash : hashTableEnsemble) {
@@ -56,23 +57,30 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
 
             for (Integer cIndex : queryResult) {
                 for (int i = 0; i < secondaryIndex[cIndex].length; i++) {
-                    if (voteMap.keySet().contains(secondaryIndex[cIndex][i])) {
-                        voteMap.replace(cIndex, voteMap.get(secondaryIndex[cIndex][i])+1);
+                    int votingIndex = secondaryIndex[cIndex][i];
+                    if (voteMap.keySet().contains(votingIndex)) {
+                        voteMap.replace(votingIndex, voteMap.get(votingIndex)+1);
                     } else {
-                        voteMap.put(cIndex, 1);
+                        voteMap.put(votingIndex, 1);
                     }
                 }
             }
         }
-        
+
+        // Check if votemap is large enough
+        if (voteMap.size() < candidateSetSize) {
+            return Utils.bruteForceKNN(corpusMatrix, qVec, voteMap.keySet(),  k);
+        }
+
+
         Vote[] votes = new Vote[voteMap.size()];
         int ctr = 0;
         for (Integer cIndex : voteMap.keySet()) {
-            votes[ctr++] = new Vote(cIndex, -voteMap.get(cIndex));
+            votes[ctr++] = new Vote(cIndex, voteMap.get(cIndex));
         }
-        int location = Utils.quickSelect(votes, 0, voteMap.size(), 3*k);
+        int location = Utils.quickSelect(votes, 0, voteMap.size()-1, candidateSetSize);
+        
         List<Integer> candidateSet = new LinkedList<>();
-
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
         }
