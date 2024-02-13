@@ -44,6 +44,7 @@ public class HashTable implements Serializable {
         }
 
         // Initialize P and listHashingInts
+        BigInteger P = new BigInteger(corpusMatrix.length)
     }
 
     public List<Integer> query(float[] qVec) {
