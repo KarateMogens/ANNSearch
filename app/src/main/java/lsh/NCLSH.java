@@ -45,7 +45,7 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
 
     public int[] search(float[] qVec, int k) {
 
-        final int candidateSetSize = 100*k;
+        final int candidateSetSize = 10*k;
         
         Map<Integer,Integer> voteMap = new HashMap<>(); 
         for (HashTable hash : hashTableEnsemble) {

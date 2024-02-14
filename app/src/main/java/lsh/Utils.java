@@ -133,12 +133,6 @@ public class Utils {
         Vote temp = votes[hi];
         votes[hi] = votes[pivotLoc];
         votes[pivotLoc] = temp;
-        // StringBuilder builder = new StringBuilder();
-        // for (Vote vote : votes) {
-        //     builder.append(" ");
-        //     builder.append(vote.getVotes());
-        // }
-        // System.out.println(builder.toString());
         return pivotLoc;     
     }
 

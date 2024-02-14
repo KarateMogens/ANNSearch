@@ -16,14 +16,11 @@ public class HashTable implements Serializable {
     private long[] listHashing;
 
     public HashTable(int d, int K, double r) {
-
         hashIndex = new HashMap<>();
-
         hashFunctions = new LinkedList<>();
         for (int i = 0; i < K; i++) {
             hashFunctions.add(new HashFunction(d, r));
         }
-
     }
 
     public void fit(float[][] corpusMatrix) {
@@ -69,10 +66,8 @@ public class HashTable implements Serializable {
     }   
 
     public List<Integer> query(float[] qVec) {
-
         long bin = getBin(qVec);
         return hashIndex.get(bin);
-
     }
 
     private long getBin(float[] vec) {
