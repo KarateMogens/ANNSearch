@@ -4,8 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.Serializable;
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -47,14 +45,17 @@ public class HashTable implements Serializable {
                 continue;
             }
             partition.add(cIndex);
+            System.out.println("fit element" + cIndex);
         }
     }
 
     private void initP(long corpusSize) {
+        corpusSize = corpusSize * corpusSize;
         while (!Utils.isPrime(corpusSize)) {
             corpusSize++;
         }
         P = corpusSize;
+        System.out.println("done - init p");
     }
 
     private void initList() {
@@ -64,6 +65,7 @@ public class HashTable implements Serializable {
         for (int i = 0; i < listHashing.length; i++) {
             listHashing[i] = (long) randomGen.nextDouble()*P;
         }
+        System.out.println("done - init list");
     }   
 
     public List<Integer> query(float[] qVec) {

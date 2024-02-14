@@ -66,9 +66,11 @@ public class ANNSearchableFactory {
         File datastructure = getSuitableCLSH(DATADIRECTORY, L, K, r);
 
         if (datastructure == null) {
+            System.out.println("Data structure is null");
             IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
             float[][] corpusMatrix = reader.readFloatMatrix("train");
             classicLSH = new ClassicLSH(L, K, r, corpusMatrix);
+            System.out.println("Built new datastructure");
             String fileName = String.format("ClassicLSH_%1$d_%2$f_%3$d.ser", K, r, L);
             writeToDisk(classicLSH, DATADIRECTORY, fileName);
         } else {

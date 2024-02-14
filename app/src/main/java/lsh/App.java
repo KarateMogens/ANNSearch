@@ -29,7 +29,7 @@ import java.io.FileInputStream;
 public class App {
 
     public static void main(String[] args) {
-     
+
         String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         String FILENAME = "fashion-mnist-784-euclidean.hdf5";
     
@@ -43,7 +43,7 @@ public class App {
         ANNSearchable mySearch;
 
         try {
-            mySearch = knnsFactory.getNCLSH(3, 1, 25.0f, 10, FILENAME);
+            mySearch = knnsFactory.getClassicLSH(3, 1, 25.0f, FILENAME);
             int[] locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : neighbors[0]) {

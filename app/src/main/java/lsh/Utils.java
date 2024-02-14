@@ -211,9 +211,8 @@ public class Utils {
     public static boolean isPrime(long n) {
         long k = 2;
         while (k * k <= n && n % k != 0) {
-            
+            k++;
         }
-          k++;
         return n >= 2 && k * k > n;
       }
 
