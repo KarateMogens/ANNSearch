@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -11,9 +13,9 @@ import java.util.Random;
 public class HashTable implements Serializable {
 
     private List<HashFunction> hashFunctions;
-    private Map<Integer, List<Integer>> hashIndex;
-    private int P;
-    private int[] listHashingInts;
+    private Map<Long, List<Integer>> hashIndex;
+    private long P;
+    private long[] listHashing;
 
     public HashTable(int d, int K, double r) {
 
@@ -27,10 +29,14 @@ public class HashTable implements Serializable {
     }
 
     public void fit(float[][] corpusMatrix) {
+
+        initP(corpusMatrix.length);
+        initList();
+
         for (int cIndex = 0; cIndex < corpusMatrix.length; cIndex++) {
             float[] cVec = corpusMatrix[cIndex];
 
-            int bin = getBin(cVec);
+            long bin = getBin(cVec);
 
             // Add index to partition
             List<Integer> partition = hashIndex.get(bin);
@@ -42,19 +48,32 @@ public class HashTable implements Serializable {
             }
             partition.add(cIndex);
         }
-
-        // Initialize P and listHashingInts
-        BigInteger P = new BigInteger(corpusMatrix.length)
     }
+
+    private void initP(long corpusSize) {
+        while (!Utils.isPrime(corpusSize)) {
+            corpusSize++;
+        }
+        P = corpusSize;
+    }
+
+    private void initList() {
+        Random randomGen = new Random();
+
+        listHashing = new long[hashFunctions.size()];
+        for (int i = 0; i < listHashing.length; i++) {
+            listHashing[i] = (long) randomGen.nextDouble()*P;
+        }
+    }   
 
     public List<Integer> query(float[] qVec) {
 
-        int bin = getBin(qVec);
+        long bin = getBin(qVec);
         return hashIndex.get(bin);
 
     }
 
-    private int getBin(float[] vec) {
+    private long getBin(float[] vec) {
 
         int[] hashValues = new int[hashFunctions.size()];
         for (int i = 0; i < hashFunctions.size(); i++) {
@@ -64,12 +83,15 @@ public class HashTable implements Serializable {
         return hashList(hashValues);
     }
 
-    private int hashList(int[] hashValues) {
-        int bin = 0;
+    private long hashList(int[] list) {
+        long listHashValue = 0;
+        for (int i = 0; i < list.length; i++) {
+            listHashValue += list[i] * listHashing[i];
+        }
+        return listHashValue % P;
 
-
-        return bin;
     }
+
 
     class HashFunction implements Serializable {
 
