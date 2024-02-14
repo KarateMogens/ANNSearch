@@ -24,12 +24,17 @@ import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.FileInputStream;
+import java.util.Random;
 
 
 public class App {
 
 
     public static void main(String[] args) {
+        long P = 3600000011l;
+        Random randomGen = new Random();
+        long myLong = (long) (P*randomGen.nextFloat());
+        System.out.println("My long is : " + myLong);
 
 
         // //  TEST QUICKSELECT
@@ -72,7 +77,7 @@ public class App {
         ANNSearchable mySearch;
 
         try {
-            mySearch = knnsFactory.getNCLSH(5, 1, 12.0f, 10, FILENAME);
+            mySearch = knnsFactory.getNCLSH(10, 1, 25.0f, 10, FILENAME);
             int[] locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {

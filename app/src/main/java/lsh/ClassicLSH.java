@@ -56,6 +56,7 @@ public class ClassicLSH implements ANNSearchable, Serializable{
             }
             candidateSet.addAll(hash.query(qVec));
         }
+        System.out.println(candidateSet.size());
 
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 

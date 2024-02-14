@@ -60,7 +60,7 @@ public class HashTable implements Serializable {
 
         listHashing = new long[hashFunctions.size()];
         for (int i = 0; i < listHashing.length; i++) {
-            listHashing[i] = (long) randomGen.nextDouble()*P;
+            listHashing[i] = (long) (randomGen.nextFloat()*P);
         }
         //System.out.println("done - init list");
     }   
