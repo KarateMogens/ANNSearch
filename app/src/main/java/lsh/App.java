@@ -72,13 +72,13 @@ public class App {
         ANNSearchable mySearch;
 
         try {
-            mySearch = knnsFactory.getClassicLSH(3, 1, 25.0f, FILENAME);
+            mySearch = knnsFactory.getNCLSH(3, 1, 25.0f, 10, FILENAME);
             int[] locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {
-                actualNeighbors.add(i);
+                actualNeighbors.add(i); 
             }
-            //System.out.println(actualNeighbors);
+            System.out.println(actualNeighbors.toString());
             
             for (Integer neighbor : locatedNeighbors) {
                 System.out.println(neighbor);

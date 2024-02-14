@@ -45,7 +45,7 @@ public class HashTable implements Serializable {
                 continue;
             }
             partition.add(cIndex);
-            System.out.println("fit element" + cIndex);
+            //System.out.println("fit element" + cIndex);
         }
     }
 
@@ -55,7 +55,7 @@ public class HashTable implements Serializable {
             corpusSize++;
         }
         P = corpusSize;
-        System.out.println("done - init p");
+        //System.out.println("done - init p");
     }
 
     private void initList() {
@@ -65,7 +65,7 @@ public class HashTable implements Serializable {
         for (int i = 0; i < listHashing.length; i++) {
             listHashing[i] = (long) randomGen.nextDouble()*P;
         }
-        System.out.println("done - init list");
+        //System.out.println("done - init list");
     }   
 
     public List<Integer> query(float[] qVec) {
