@@ -47,6 +47,20 @@ public class Utils {
 
     }
 
+    public static float euclideanSquareDistance(float[] aVec, float[] bVec) {
+        
+        if (aVec.length != bVec.length) {
+            throw new IllegalArgumentException("Vectors of unequal length passed");
+        }
+
+        float squaredDistance = 0.0f;
+        for (int i = 0; i < bVec.length; i++) {
+            squaredDistance += Math.pow(aVec[i]-bVec[i], 2);
+        }
+        return squaredDistance;
+
+    }
+
     public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Iterable<Integer> candidateSet, int k) {
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
@@ -170,7 +184,6 @@ public class Utils {
     }
 
     public static int[][] groundTruthParallel(float[][] corpusMatrix, int k) {
-
         
         int corpusSize = corpusMatrix.length;
         int[][] secondaryIndex = new int[corpusSize][];

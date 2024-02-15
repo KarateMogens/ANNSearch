@@ -31,38 +31,6 @@ public class App {
 
 
     public static void main(String[] args) {
-        long P = 3600000011l;
-        Random randomGen = new Random();
-        long myLong = (long) (P*randomGen.nextFloat());
-        System.out.println("My long is : " + myLong);
-
-
-        // //  TEST QUICKSELECT
-        // Vote[] votes = new Vote[10];
-        // votes[0] = new Vote(0, 1);
-        // votes[1] = new Vote(0, 1);
-        // votes[2] = new Vote(0, 1);
-        // votes[3] = new Vote(0, 1);
-        // votes[4] = new Vote(0, 1);
-        // votes[5] = new Vote(0, 2);
-        // votes[6] = new Vote(0, 2);
-        // votes[7] = new Vote(0, 2);
-        // votes[8] = new Vote(0, 2);
-        // votes[9] = new Vote(0, 2);
-
-
-        // int partition = Utils.quickSelect(votes, 0, 9, 2);
-
-        // System.out.println("partition index: " + partition);
-
-        // StringBuilder builder = new StringBuilder();
-        // for (Vote vote : votes) {
-        //     builder.append(" ");
-        //     builder.append(vote.getVotes());
-        // }
-        // System.out.println(builder.toString());
-
-        
      
         String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         String FILENAME = "fashion-mnist-784-euclidean.hdf5";
@@ -77,7 +45,7 @@ public class App {
         ANNSearchable mySearch;
 
         try {
-            mySearch = knnsFactory.getNCLSH(10, 1, 25.0f, 10, FILENAME);
+            mySearch = knnsFactory.getNCLSH(20, 2, 100.0f, 10, FILENAME);
             int[] locatedNeighbors = mySearch.search(test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {

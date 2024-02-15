@@ -83,12 +83,11 @@ public class HashTable implements Serializable {
     private long hashList(int[] list) {
         long listHashValue = 0;
         for (int i = 0; i < list.length; i++) {
-            listHashValue += list[i] * listHashing[i];
+            listHashValue += (list[i] * listHashing[i]);
         }
         return listHashValue % P;
 
     }
-
 
     class HashFunction implements Serializable {
 
