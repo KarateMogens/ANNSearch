@@ -10,8 +10,8 @@ import java.util.Random;
 
 public class HashTable implements Serializable {
 
-    private List<HashFunction> hashFunctions;
-    private Map<Long, List<Integer>> hashIndex;
+    protected List<HashFunction> hashFunctions;
+    protected Map<Long, List<Integer>> hashIndex;
     private long P;
     private long[] listHashing;
 
@@ -70,7 +70,7 @@ public class HashTable implements Serializable {
         return hashIndex.get(bin);
     }
 
-    private long getBin(float[] vec) {
+    protected long getBin(float[] vec) {
 
         int[] hashValues = new int[hashFunctions.size()];
         for (int i = 0; i < hashFunctions.size(); i++) {
@@ -89,41 +89,5 @@ public class HashTable implements Serializable {
 
     }
 
-    class HashFunction implements Serializable {
-
-        private float[] aVec;
-        private double b;
-        private double r;
-
-        public HashFunction(int d, double r) {
-
-            this.r = r;
-            // b is drawn from uniform distribution [0,r]
-            Random randomGen = new Random();
-
-            b = randomGen.nextFloat() * r;
-
-            // random d-dimensional vector where each component is drawn from N(0,1)
-            aVec = new float[d];
-            for (int i = 0; i < d; i++) {
-                aVec[i] = (float) randomGen.nextGaussian();
-
-            }
-
-        }
-
-        // Implement constructor with seed value for testing? Will generate same random
-        // vector each time
-
-        public int hash(float[] xVec) {
-
-            // Calculate a.x
-            float dotProd = Utils.dot(xVec, aVec);
-
-            // Calculate the hash-value
-            return (int) Math.floor((dotProd + b) / r);
-
-        }
-
-    }
+    
 }

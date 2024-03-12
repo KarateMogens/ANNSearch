@@ -64,6 +64,8 @@ public class App {
         }
         
 
+        
+
         // ------------ ERROR FINDING IN GROUND TRUTH -----------------------------
         // String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         // FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth.h5";

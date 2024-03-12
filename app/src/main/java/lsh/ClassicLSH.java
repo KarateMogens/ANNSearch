@@ -10,8 +10,6 @@ public class ClassicLSH implements ANNSearchable, Serializable{
     
     protected List<HashTable> hashTableEnsemble;
     protected float[][] corpusMatrix;
-    protected String DATADIRECTORY;
-    protected String DATASET;
 
     //Hyperparameters
     protected int L;
@@ -49,12 +47,12 @@ public class ClassicLSH implements ANNSearchable, Serializable{
     public int[] search(float[] qVec, int k) {
 
         Set<Integer> candidateSet = new HashSet<>();
-        for (HashTable hash : hashTableEnsemble) {
-            List<Integer> queryResult = hash.query(qVec);
+        for (HashTable hashTable : hashTableEnsemble) {
+            List<Integer> queryResult = hashTable.query(qVec);
             if (queryResult == null) {
                 continue;
             }
-            candidateSet.addAll(hash.query(qVec));
+            candidateSet.addAll(hashTable.query(qVec));
         }
         System.out.println(candidateSet.size());
 

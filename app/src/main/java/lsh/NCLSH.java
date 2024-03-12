@@ -73,9 +73,6 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
         if (voteMap.size() < candidateSetSize) {
             return Utils.bruteForceKNN(corpusMatrix, qVec, voteMap.keySet(),  k);
         }
-        
-        
-
 
         Vote[] votes = new Vote[voteMap.size()];
         int ctr = 0;
@@ -92,9 +89,5 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
-
-    
-    
-    
     
 }
