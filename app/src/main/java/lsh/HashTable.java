@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 
-public class HashTable implements Serializable {
+public class HashTable implements Searchable, Serializable {
 
     protected List<HashFunction> hashFunctions;
     protected Map<Long, List<Integer>> hashIndex;
@@ -42,7 +42,6 @@ public class HashTable implements Serializable {
                 continue;
             }
             partition.add(cIndex);
-            //System.out.println("fit element" + cIndex);
         }
     }
 
@@ -52,7 +51,6 @@ public class HashTable implements Serializable {
             corpusSize++;
         }
         P = corpusSize;
-        //System.out.println("done - init p");
     }
 
     private void initList() {
@@ -62,10 +60,9 @@ public class HashTable implements Serializable {
         for (int i = 0; i < listHashing.length; i++) {
             listHashing[i] = (long) (randomGen.nextFloat()*P);
         }
-        //System.out.println("done - init list");
     }   
 
-    public List<Integer> query(float[] qVec) {
+    public List<Integer> search(float[] qVec) {
         long bin = getBin(qVec);
         return hashIndex.get(bin);
     }

@@ -32,7 +32,7 @@ public class App {
 
     public static void main(String[] args) {
      
-        String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
+        String FILEPATH = "app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         String FILENAME = "fashion-mnist-784-euclidean.hdf5";
     
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
@@ -41,12 +41,14 @@ public class App {
         float[][] train = reader.readFloatMatrix("train");
         reader.close();
 
-        ANNSearchableFactory knnsFactory = ANNSearchableFactory.getInstance();
-        NCLSH mySearch;
+        ANNSearcherFactory knnsFactory = ANNSearcherFactory.getInstance();
+        ANNSearcher mySearch;
 
         try {
-            mySearch = knnsFactory.getNCLSH(20, 2, 100.0f, 10, FILENAME);
-            int[] locatedNeighbors = mySearch.search(test[0], 10);
+            mySearch = knnsFactory.getNCLSH(2, 200.0f, 50, 10, FILENAME);
+            //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
+            //int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
+            int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {
                 actualNeighbors.add(i); 

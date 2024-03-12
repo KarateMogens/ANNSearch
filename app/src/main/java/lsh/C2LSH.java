@@ -15,7 +15,7 @@ public class C2LSH {
     List<Map<Integer,List<Integer>>> compoundHashTable;
     float[][] corpusMatrix;
 
-    public C2LSH(int K, float[][] corpusMatrix) {
+    public C2LSH(int d, int K, float[][] corpusMatrix) {
         this.corpusMatrix = corpusMatrix;
         hashFunctions = new ArrayList<>(K);
         compoundHashTable = new ArrayList<>(K);

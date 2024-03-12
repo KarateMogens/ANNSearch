@@ -216,4 +216,11 @@ public class Utils {
         return n >= 2 && k * k > n;
       }
 
+    public class CandidateSetTooSmallException extends RuntimeException {
+
+        public CandidateSetTooSmallException(String message) {
+            super(message);
+        }
+    }
+
 }
