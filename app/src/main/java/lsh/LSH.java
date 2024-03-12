@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.io.Serializable;
 
-public class ClassicLSH implements ANNSearchable, Serializable{
+public class LSH implements Serializable{
     
     protected List<HashTable> hashTableEnsemble;
     protected float[][] corpusMatrix;
@@ -16,7 +16,7 @@ public class ClassicLSH implements ANNSearchable, Serializable{
     protected int K;
     protected float r;
 
-    public ClassicLSH(int L, int K, float r, float[][] corpusMatrix) {
+    public LSH(int L, int K, float r, float[][] corpusMatrix) {
         this.corpusMatrix = corpusMatrix;
         this.L = L;
         this.K = K;
@@ -47,17 +47,35 @@ public class ClassicLSH implements ANNSearchable, Serializable{
     public int[] search(float[] qVec, int k) {
 
         Set<Integer> candidateSet = new HashSet<>();
+        
         for (HashTable hashTable : hashTableEnsemble) {
             List<Integer> queryResult = hashTable.query(qVec);
             if (queryResult == null) {
                 continue;
             }
-            candidateSet.addAll(hashTable.query(qVec));
+            candidateSet.addAll(queryResult);
         }
-        System.out.println(candidateSet.size());
 
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
+    }
+
+    public int[] votingSearch(float[] qVec, int k, int threshold) {
+
+        Set<Integer> candidateSet = new HashSet<>();
+        int[] frequency = new int[corpusMatrix.length];
+
+        for (HashTable hashTable : hashTableEnsemble) {
+            List<Integer> queryResult = hashTable.query(qVec);
+            for (Integer cIndex : queryResult) {
+                if (++frequency[cIndex] == threshold) {
+                    candidateSet.add(cIndex);
+                };
+
+            }
+        }   
+
+        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }
 
     

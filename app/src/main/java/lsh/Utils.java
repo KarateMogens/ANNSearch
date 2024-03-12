@@ -124,7 +124,7 @@ public class Utils {
     }
 
     private static int partition(Vote[] votes, int lo, int hi) {
-        int pivotValue = votes[hi].getVotes();
+        float pivotValue = votes[hi].getVotes();
         int pivotLoc = lo;
 
         for (int i = lo; i <= hi; i++) {

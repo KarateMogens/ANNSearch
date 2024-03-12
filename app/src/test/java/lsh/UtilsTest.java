@@ -77,19 +77,19 @@ public class UtilsTest {
     public void quickSelectTest() {
 
         Vote[] votes = new Vote[10];
-        votes[0] = new Vote(0, 7);
-        votes[1] = new Vote(0, 6);
-        votes[2] = new Vote(0, 1);
-        votes[3] = new Vote(0, 2);
-        votes[4] = new Vote(0, 9);
-        votes[5] = new Vote(0, 4);
-        votes[6] = new Vote(0, 6);
-        votes[7] = new Vote(0, 21);
-        votes[8] = new Vote(0, 5);
-        votes[9] = new Vote(0, 8);
+        votes[0] = new Vote(0, 7.0f);
+        votes[1] = new Vote(0, 6.0f);
+        votes[2] = new Vote(0, 1.0f);
+        votes[3] = new Vote(0, 2.0f);
+        votes[4] = new Vote(0, 9.0f);
+        votes[5] = new Vote(0, 4.0f);
+        votes[6] = new Vote(0, 6.0f);
+        votes[7] = new Vote(0, 21.0f);
+        votes[8] = new Vote(0, 5.0f);
+        votes[9] = new Vote(0, 8.0f);
         int partition = Utils.quickSelect(votes, 0, 9, 4); 
-        int actualValue = votes[partition].getVotes();
-        assertEquals(7, actualValue);
+        float actualValue = votes[partition].getVotes();
+        assertEquals(7.0f, actualValue);
 
         for (int i = partition; i < votes.length; i++) {
             assertTrue(votes[i].getVotes() <= actualValue);
@@ -97,19 +97,19 @@ public class UtilsTest {
 
 
         Vote[] votes2 = new Vote[10];
-        votes2[0] = new Vote(0, -7);
-        votes2[1] = new Vote(0, 6);
-        votes2[2] = new Vote(0, 1);
-        votes2[3] = new Vote(0, -2);
-        votes2[4] = new Vote(0, 9);
-        votes2[5] = new Vote(0, 4);
-        votes2[6] = new Vote(0, 6);
-        votes2[7] = new Vote(0, -21);
-        votes2[8] = new Vote(0, 5);
-        votes2[9] = new Vote(0, 8);
+        votes2[0] = new Vote(0, -7.0f);
+        votes2[1] = new Vote(0, 6.0f);
+        votes2[2] = new Vote(0, 1.0f);
+        votes2[3] = new Vote(0, -2.0f);
+        votes2[4] = new Vote(0, 9.0f);
+        votes2[5] = new Vote(0, 4.0f);
+        votes2[6] = new Vote(0, 6.0f);
+        votes2[7] = new Vote(0, -21.0f);
+        votes2[8] = new Vote(0, 5.0f);
+        votes2[9] = new Vote(0, 8.0f);
         int partition2 = Utils.quickSelect(votes2, 0, 9, 4); 
-        int actualValue2 = votes2[partition2].getVotes();
-        assertEquals(6, actualValue2);
+        float actualValue2 = votes2[partition2].getVotes();
+        assertEquals(6.0f, actualValue2);
 
         for (int i = partition2; i < votes2.length; i++) {
             assertTrue(votes2[i].getVotes() <= actualValue2);

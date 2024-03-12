@@ -3,17 +3,17 @@ package lsh;
 public class Vote {
 
     private int cIndex;
-    private int votes;
+    private float votes;
 
     public int getcIndex() {
         return cIndex;
     }
 
-    public int getVotes() {
+    public float getVotes() {
         return votes;
     }
 
-    public Vote(int cIndex, int votes) {
+    public Vote(int cIndex, float votes) {
         this.cIndex = cIndex;
         this.votes = votes;
     }

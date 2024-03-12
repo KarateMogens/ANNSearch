@@ -4,11 +4,10 @@ import java.util.Set;
 import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.HashMap;
 import java.io.Serializable;
 
-public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
+public class NCLSH extends LSH implements Serializable {
 
     private int[][] secondaryIndex;
     private int k;
@@ -43,44 +42,66 @@ public class NCLSH extends ClassicLSH implements ANNSearchable, Serializable {
         this.secondaryIndex = groundTruth;
     }
 
-    public int[] search(float[] qVec, int k) {
+    private HashMap<Integer, Float> getVoteMap(float[] qVec) {
 
-        final int candidateSetSize = 100*k;
-        
-        Map<Integer,Integer> voteMap = new HashMap<>(); 
-        for (HashTable hash : hashTableEnsemble) {
-            List<Integer> queryResult = hash.query(qVec);
-            
-            if (queryResult == null) {
-                continue;
-            }
+        HashMap<Integer, Float> corpusVotes = new HashMap<>();
 
+
+        for (HashTable hashTable : hashTableEnsemble) {
+
+            List<Integer> queryResult = hashTable.query(qVec);
+            // Account for varying partition size
+            float voteWeight = 1/(float) queryResult.size();
             for (Integer cIndex : queryResult) {
-                for (int i = 0; i < secondaryIndex[cIndex].length; i++) {
-                    int votingIndex = secondaryIndex[cIndex][i];
-                    if (voteMap.keySet().contains(votingIndex)) {
-                        voteMap.replace(votingIndex, voteMap.get(votingIndex)+1);
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : secondaryIndex[cIndex]) {
+                    if (corpusVotes.containsKey(neighborOfcIndex)) {
+                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) + voteWeight);
                     } else {
-                        voteMap.put(votingIndex, 1);
+                        corpusVotes.put(cIndex, voteWeight);
                     }
                 }
             }
         }
 
-        System.out.println(voteMap.size());
+        return corpusVotes;
+    }
 
-        // Check if votemap is large enough
-        if (voteMap.size() < candidateSetSize) {
-            return Utils.bruteForceKNN(corpusMatrix, qVec, voteMap.keySet(),  k);
+    public int[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
+
+        HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
+
+        //Iterate over all elements, adding only candidates to C with adequate vote average
+        Set<Integer> candidateSet = new HashSet<>();
+        for (Integer cIndex : corpusVotes.keySet()) {
+            float voteValue = corpusVotes.get(cIndex);
+            if (voteValue/(float) hashTableEnsemble.size() >= threshold) {
+                candidateSet.add(cIndex);
+            }
         }
 
-        Vote[] votes = new Vote[voteMap.size()];
-        int ctr = 0;
-        for (Integer cIndex : voteMap.keySet()) {
-            votes[ctr++] = new Vote(cIndex, voteMap.get(cIndex));
-        }
-        int location = Utils.quickSelect(votes, 0, voteMap.size()-1, candidateSetSize);
+        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+
+    }
+
+    public int[] naturalClassifierSearch(float[] qVec, int k, int candidateSetSize) {
         
+        HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
+
+        // If max candidatesetsize note reached, all elements are part of C
+        if (corpusVotes.size() < candidateSetSize) {
+            return Utils.bruteForceKNN(corpusMatrix, qVec, corpusVotes.keySet(),  k);
+        }
+
+        // Convert all vote entries into an array which is compatible with quickSelect.
+        Vote[] votes = new Vote[corpusVotes.size()];
+        int ctr = 0;
+        for (Integer cIndex : corpusVotes.keySet()) {
+            votes[ctr++] = new Vote(cIndex, corpusVotes.get(cIndex));
+        }
+        int location = Utils.quickSelect(votes, 0, corpusVotes.size()-1, candidateSetSize);
+        
+        // Pick only top candidates
         List<Integer> candidateSet = new LinkedList<>();
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());

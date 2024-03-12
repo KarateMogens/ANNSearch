@@ -42,7 +42,7 @@ public class App {
         reader.close();
 
         ANNSearchableFactory knnsFactory = ANNSearchableFactory.getInstance();
-        ANNSearchable mySearch;
+        NCLSH mySearch;
 
         try {
             mySearch = knnsFactory.getNCLSH(20, 2, 100.0f, 10, FILENAME);

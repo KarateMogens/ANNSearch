@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+
+/* NOT TESTED - ONLY ROUGH IMPLEMENTATION */
 public class C2LSH {
 
     List<HashFunction> hashFunctions;
