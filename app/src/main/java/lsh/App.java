@@ -54,7 +54,7 @@ public class App {
                 actualNeighbors.add(i); 
             }
             System.out.println(actualNeighbors.toString());
-            
+        
             for (Integer neighbor : locatedNeighbors) {
                 System.out.println(neighbor);
                 if (actualNeighbors.contains(neighbor)) {
