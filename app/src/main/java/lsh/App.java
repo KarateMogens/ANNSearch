@@ -36,11 +36,19 @@ public class App {
         ANNSearcher mySearch;
 
         try {
-            mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10);
+            //mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10);
             //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
+            List<Searchable> searchables = new LinkedList<>();
+            for (int i = 0; i < 10; i++) {
+                Searchable mySearchable = new RPTree(2);
+                mySearchable.fit(train);
+                searchables.add(mySearchable);
+            }
+            mySearch = new ANNSearcher(searchables, train);
+
             //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
-            //int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
-            int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
+            int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
+            //int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {
                 actualNeighbors.add(i); 
@@ -53,8 +61,11 @@ public class App {
                     System.out.println("Correct");
                 }
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } 
+        //catch (FileNotFoundException e) {
+          //  e.printStackTrace();
+        finally {
+            System.out.println("whatever");
         }
         
 

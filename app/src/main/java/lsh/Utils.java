@@ -2,6 +2,7 @@ package lsh;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +22,17 @@ public class Utils {
         
         for (int i = 0; i < aVec.length; i++) {
             dotProduct += aVec[i] * bVec[i];
+        }
+
+        return dotProduct;
+    }
+
+    public static float dot(float[] aVec, float[] bVec, List<Integer> dimensions){
+
+        float dotProduct = 0.0f;
+        
+        for (Integer componentIndex : dimensions) {
+            dotProduct += aVec[componentIndex] * bVec[componentIndex];
         }
 
         return dotProduct;
@@ -52,6 +64,23 @@ public class Utils {
         }
         return squaredDistance;
 
+    }
+
+    public static float magnitude(float[] aVec) {
+        double sum = 0.0;
+        for (int i = 0; i < aVec.length; i++) {
+            sum += Math.pow(aVec[i], 2);
+        }
+        return (float) Math.sqrt(sum);
+    }
+
+    public static float[] normalize(float[] aVec) {
+        float[] normVec = Arrays.copyOf(aVec, aVec.length);
+        float magnitude = magnitude(aVec);
+        for (int i = 0; i < normVec.length; i++) {
+            normVec[i] = normVec[i] / magnitude;
+        }
+        return normVec;
     }
 
     public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Iterable<Integer> candidateSet, int k) {
@@ -221,12 +250,7 @@ public class Utils {
         return n >= 2 && k * k > n;
       }
 
-    public class CandidateSetTooSmallException extends RuntimeException {
-
-        public CandidateSetTooSmallException(String message) {
-            super(message);
-        }
-    }
+    
 
     public static float variance(float[] array) {
         
@@ -272,6 +296,15 @@ public class Utils {
         }
 
         return median;
+    }
+    
+    /* ----------- Exceptions ----------- */
+
+    public class CandidateSetTooSmallException extends RuntimeException {
+
+        public CandidateSetTooSmallException(String message) {
+            super(message);
+        }
     }
 
 }
