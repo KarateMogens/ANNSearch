@@ -1,6 +1,7 @@
 package lsh;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -123,30 +124,34 @@ public class Utils {
         return false;
     }
 
-    private static int partition(Vote[] votes, int lo, int hi) {
-        float pivotValue = votes[hi].getVotes();
+    private static int partition(Comparable[] a, int lo, int hi) {
+        Comparable pivotValue = a[hi];
         int pivotLoc = lo;
 
         for (int i = lo; i <= hi; i++) {
-            if (votes[i].getVotes() > pivotValue){
-                Vote temp = votes[i];
-                votes[i] = votes[pivotLoc];
-                votes[pivotLoc] = temp;
+            if (less(pivotValue, a[i])) {
+                Comparable temp = a[i];
+                a[i] = a[pivotLoc];
+                a[pivotLoc] = temp;
                 pivotLoc++;            
             }
         }
 
-        Vote temp = votes[hi];
-        votes[hi] = votes[pivotLoc];
-        votes[pivotLoc] = temp;
+        Comparable temp = a[hi];
+        a[hi] = a[pivotLoc];
+        a[pivotLoc] = temp;
         return pivotLoc;     
     }
 
-    public static int quickSelect(Vote[] votes, int lo, 
+    private static boolean less(Comparable u, Comparable v) {
+        return u.compareTo(v) < 0;
+    }
+
+    public static int quickSelect(Comparable[] a, int lo, 
                                   int hi, int k) 
     { 
         // find the partition 
-        int partition = partition(votes, lo, hi); 
+        int partition = partition(a, lo, hi); 
   
         // if partition value is equal to the kth position, 
         // return index of partitioning element 
@@ -157,12 +162,12 @@ public class Utils {
         // if partition index is less than kth position, 
         // search right side of the array. 
         else if (partition < k - 1) {
-            return quickSelect(votes, partition + 1, hi, k); 
+            return quickSelect(a, partition + 1, hi, k); 
         }
         // if partition index is more than kth position, 
         // search left side of the array. 
         else {
-            return quickSelect(votes, lo, partition - 1, k);
+            return quickSelect(a, lo, partition - 1, k);
         } 
     }
 
@@ -221,6 +226,52 @@ public class Utils {
         public CandidateSetTooSmallException(String message) {
             super(message);
         }
+    }
+
+    public static float variance(float[] array) {
+        
+        int size = array.length;
+
+        float mean = Utils.mean(array);
+     
+        // Compute sum of squared differences with mean.
+        double sqDiff = 0;
+        for (int i = 0; i < size; i++) {
+            sqDiff += (array[i] - mean) * (array[i] - mean);
+        }
+    
+        return (float) (sqDiff / (size -1));
+
+    }
+
+    public static float mean(float[] array) {
+        int size = array.length;
+        
+        double sum = 0;
+        for (int i = 0; i < size; i++) {
+            sum += array[i];
+        }
+        return (float) (sum / size);
+
+    }
+
+    public static float calculateSplit(float[] array) {
+        Arrays.sort(array);
+        int size = array.length;
+        float median;
+        if (size % 2 == 0) {
+            median = ((float) array[size/2] + (float) array[size/2 - 1])/2;
+        } else {
+            median = (float) array[size/2];
+        }
+
+        // In case the median creates a highly skewed split
+        // use mean.
+        if (median == array[0] || median == array[size-1]) {
+            return Utils.mean(array);
+        }
+
+        return median;
     }
 
 }

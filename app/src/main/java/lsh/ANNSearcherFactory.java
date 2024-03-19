@@ -22,6 +22,9 @@ public class ANNSearcherFactory {
 
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
     private static final String RESOURCEDIRECTORY = "app/src/main/resources/";
+    private static String DATASETFILENAME;
+    private static String DATASET;
+    private static String DATADIRECTORY;
 
     private ANNSearcherFactory() {
     }
@@ -30,27 +33,88 @@ public class ANNSearcherFactory {
         return factory;
     }
 
+    public void setDataset(String datasetFileName) throws FileNotFoundException {
+
+        String datasetName = datasetFileName.substring(0, datasetFileName.lastIndexOf("."));
+        String datadirectory = String.format(RESOURCEDIRECTORY + "%s/",
+                datasetName);
+
+        // Check if corpus file exists
+        if (!Utils.fileExists(datadirectory + datasetFileName)) {
+            throw new FileNotFoundException("The dataset does not exist. Please make sure dataset " + datasetFileName + " exists and is placed in the directory: " + RESOURCEDIRECTORY);
+        }
+
+        DATASET = datasetName;
+        DATASETFILENAME = datasetFileName;
+        DATADIRECTORY = datadirectory;
+
+    }
+
+
+    // ------------ Partition Tree ------------
+
+    public ANNSearcher getTreeSearcher(int maxLeafSize, int L) throws FileNotFoundException {
+
+        if (DATASETFILENAME == null) {
+            throw new FileNotFoundException("No dataset specified.");
+        }
+
+        float[][] corpusMatrix = getCorpusMatrix();
+
+        List<Searchable> searchables;
+        File datastructure = getSuitableRKDForest(maxLeafSize, L);
+
+        if (datastructure == null) {
+            searchables = searchableRKDForest(maxLeafSize, L, corpusMatrix);
+            
+            // Write searchables to disk
+            String fileName = String.format("RKDTree_%1$d_%2$d.ser", maxLeafSize, L);
+            writeToDisk(searchables, DATADIRECTORY, fileName);
+        } else {
+
+            searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
+            if (searchables.size() > L) {
+                searchables = searchables.subList(0, L);
+            }
+        }
+
+        return new ANNSearcher(searchables, corpusMatrix);
+    }
+
+    public ANNSearcher getNCTreeSearcher(int maxLeafSize, int L, int k) throws FileNotFoundException {
+
+        ANNSearcher mySearcher = getTreeSearcher(maxLeafSize, L);
+        int[][] secondaryIndex = getSecondIndex(k, mySearcher.getCorpusMatrix());
+        mySearcher.setSecondaryIndex(secondaryIndex, k);
+        return mySearcher;
+    }
+
+    private List<Searchable> searchableRKDForest(int maxLeafSize, int L, float[][] corpusMatrix) {
+        
+        int d = corpusMatrix[0].length;
+
+        List<Searchable> searchables = new ArrayList<Searchable>(L);
+        for (int l = 0; l < L; l++) {
+            Searchable RKDTree = new RKDTree(maxLeafSize);
+            RKDTree.fit(corpusMatrix);
+            searchables.add(l, RKDTree);
+        }
+
+        return searchables;
+    }
 
     // ------------ CLASSIC LSH ------------
 
-    public ANNSearcher getLSHSearcher(int K, float r, int L, String dataset) throws FileNotFoundException {
+    public ANNSearcher getLSHSearcher(int K, float r, int L) throws FileNotFoundException {
 
-        final String DATASET = dataset;
-        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/",
-                dataset.substring(0, dataset.lastIndexOf(".")));
-
-        // Check if corpus file exists
-        if (!Utils.fileExists(DATADIRECTORY + DATASET)) {
-            throw new FileNotFoundException("The dataset does not exist. Please make sure dataset " + dataset + " exists and is placed in the directory: " + RESOURCEDIRECTORY);
+        if (DATASETFILENAME == null) {
+            throw new FileNotFoundException("No dataset specified.");
         }
 
-        // Read corpusmatrix from disk
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASET));
-        float[][] corpusMatrix = reader.readFloatMatrix("train");
-
+        float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
-        File datastructure = getSuitableLSH(DATADIRECTORY, K, r, L);
+        File datastructure = getSuitableLSH(K, r, L);
         
         if (datastructure == null) {
             // Create a new list of HashTables
@@ -71,30 +135,14 @@ public class ANNSearcherFactory {
         return new ANNSearcher(searchables, corpusMatrix);
     }
 
-    public ANNSearcher getNCLSH(int K, float r, int L, int k, String dataset) throws FileNotFoundException {
+    public ANNSearcher getNCLSHSearcher(int K, float r, int L, int k) throws FileNotFoundException {
 
-        final String DATASET = dataset;
-        final String DATASETNAME = dataset.substring(0, dataset.lastIndexOf("."));
-        final String DATADIRECTORY = String.format(RESOURCEDIRECTORY + "%s/", DATASETNAME);
-
-        ANNSearcher LSHSearcher = getLSHSearcher(K, r, L, DATASET);
-
-        File secondaryIndex = getSecondIndex(DATADIRECTORY, DATASETNAME, k);
-        int[][] secondaryIndexMatrix;
-
-        if (secondaryIndex == null) {
-            System.out.println("No suitable secondary index found. Constructing new index.");
-            // Calculate new ground truth
-            secondaryIndexMatrix = Utils.groundTruthParallel(LSHSearcher.getCorpusMatrix(), k);
-            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-%2$d.ser", DATASETNAME, k));
-        } else {
-            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
-        }
-
+        ANNSearcher LSHSearcher = getLSHSearcher(K, r, L);
+        int[][] secondaryIndexMatrix = getSecondIndex(k, LSHSearcher.getCorpusMatrix());
         LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
 
         return LSHSearcher;
-    }
+    }   
 
     private List<Searchable> searchableLSH(int K, float r, int L, float[][] corpusMatrix) {
         
@@ -106,7 +154,6 @@ public class ANNSearcherFactory {
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
         }
-
         return searchables;
     }
 
@@ -133,9 +180,52 @@ public class ANNSearcherFactory {
         return null;
     }
 
-    private File getSuitableLSH(String dataDirectory, int K, float r, int L) {
+    private float[][] getCorpusMatrix() {
 
-        File directory = new File(dataDirectory);
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASETFILENAME));
+        return reader.readFloatMatrix("train");
+    }
+
+    private int[][] getSecondIndex(int k, float[][] corpusMatrix) {
+        File secondaryIndex = getSecondIndexFile(k);
+        int[][] secondaryIndexMatrix;
+
+        if (secondaryIndex == null) {
+            System.out.println("No suitable secondary index found. Constructing new index.");
+            // Calculate new ground truth
+            secondaryIndexMatrix = Utils.groundTruthParallel(corpusMatrix, k);
+            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-%2$d.ser", DATASET, k));
+        } else {
+            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
+        }
+        return secondaryIndexMatrix;
+    }
+
+    private File getSuitableRKDForest(int maxLeafSize, int L) {
+        File directory = new File(DATADIRECTORY);
+        File[] files = directory.listFiles();
+
+        Pattern pattern = Pattern.compile("RKDTree_(\\d+)_(\\d+).ser");
+
+        for (File file : files) {
+            String fileName = file.getName();
+            Matcher match = pattern.matcher(fileName);
+            if (!match.matches() || Integer.parseInt(match.group(1)) != maxLeafSize) {
+                continue;
+            }
+
+            if (Integer.parseInt(match.group(2)) < L) {
+                continue;
+            }
+            System.out.println("Loaded RKD from storage: " + file.getName());
+            return file;
+        }
+
+        return null;
+    }
+
+    private File getSuitableLSH(int K, float r, int L) {
+        File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
 
         Pattern pattern = Pattern.compile("LSH_(\\d+)_(\\d+,\\d+)_(\\d+).ser");
@@ -153,21 +243,20 @@ public class ANNSearcherFactory {
             System.out.println("Loaded ClassicLSH from storage: " + file.getName());
             return file;
         }
-
         return null;
 
     }
 
-    private File getSecondIndex(String dataDirectory, String dataset, int k) {
+    private File getSecondIndexFile(int k) {
 
-        File directory = new File(dataDirectory);
+        File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
 
         if (files == null) {
             return null;
         }
 
-        Pattern pattern = Pattern.compile(dataset + "-groundtruth-(\\d+).ser");
+        Pattern pattern = Pattern.compile(DATASET + "-groundtruth-(\\d+).ser");
         for (File file : files) {
             String fileName = file.getName();
             Matcher match = pattern.matcher(fileName);

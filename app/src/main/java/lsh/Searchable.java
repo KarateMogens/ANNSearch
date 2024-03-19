@@ -1,10 +1,10 @@
 package lsh;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface Searchable {
 
-    public List<Integer> search(float[] qVec);
+    public Collection<Integer> search(float[] qVec);
 
     public void fit(float[][] corpusMatrix);
 

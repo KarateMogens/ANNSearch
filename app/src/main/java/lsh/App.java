@@ -5,26 +5,11 @@ package lsh;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.Set;
 
 import ch.systemsx.cisd.hdf5.*;
-import javassist.bytecode.analysis.Util;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.FileInputStream;
-import java.util.Random;
 
 
 public class App {
@@ -42,10 +27,17 @@ public class App {
         reader.close();
 
         ANNSearcherFactory knnsFactory = ANNSearcherFactory.getInstance();
+        try {  
+            knnsFactory.setDataset(FILENAME);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    
         ANNSearcher mySearch;
 
         try {
-            mySearch = knnsFactory.getNCLSH(2, 200.0f, 50, 10, FILENAME);
+            mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10);
+            //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
             //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
             //int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
             int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
@@ -58,9 +50,9 @@ public class App {
             for (Integer neighbor : locatedNeighbors) {
                 System.out.println(neighbor);
                 if (actualNeighbors.contains(neighbor)) {
-                    System.out.println("1");
+                    System.out.println("Correct");
                 }
-        }
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

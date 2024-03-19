@@ -6,27 +6,39 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 
 /* NOT TESTED - ONLY ROUGH IMPLEMENTATION */
-public class C2LSH {
+public class C2LSH implements Searchable {
 
     List<HashFunction> hashFunctions;
     List<Map<Integer,List<Integer>>> compoundHashTable;
-    float[][] corpusMatrix;
+    int d;
+    int minSize;
+    int threshold;
+    int corpusMatrixSize;
 
-    public C2LSH(int d, int K, float[][] corpusMatrix) {
-        this.corpusMatrix = corpusMatrix;
+    public C2LSH(int d, int K) {
+        this.d = d;
         hashFunctions = new ArrayList<>(K);
         compoundHashTable = new ArrayList<>(K);
         for (int i = 0; i < K; i++) {
             // Always set r to 1.
-            hashFunctions.add(i, new HashFunction(corpusMatrix[0].length, 1));
+            hashFunctions.add(i, new HashFunction(d, 1));
         }
-        fit();
     }
 
-    private void fit() {
+    public void setMinSize(int minSize) {
+        this.minSize = minSize;
+    }
+
+    public void setThreshold(int threshold) {
+        this.threshold = threshold;
+    }
+
+    public void fit(float[][] corpusMatrix) {
+        this.corpusMatrixSize = corpusMatrix.length;
 
         for (int i = 0; i < hashFunctions.size(); i ++) {
             // Create a map for each hashfunction, corresponding to a level-1 hashtable
@@ -47,8 +59,11 @@ public class C2LSH {
         
     }
 
+    public Collection<Integer> search(float[] qVec) {
 
-    public int[] search(float[] qVec, int k, int minSize, int threshold) {
+        if (minSize <= 0 || threshold <= 0 || corpusMatrixSize <= 0) {
+            throw new IllegalArgumentException("minSize or threshold not specified");
+        }
        
         HashSet<Integer> candidateSet = new HashSet<>();
         int R = 1;
@@ -57,7 +72,8 @@ public class C2LSH {
         // Initialization and first round
 
         // Vector to count frequency of corpusPoints
-        int[] frequency = new int[corpusMatrix.length];
+        int[] frequency = new int[corpusMatrixSize];
+
         PointerSet[] hashFunctionPointers = new PointerSet[compoundHashTable.size()];
         for (int i = 0; i < compoundHashTable.size(); i++) {
 
@@ -74,7 +90,7 @@ public class C2LSH {
             }
             
             if (candidateSet.size() >= minSize) {
-                return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+                return candidateSet;
             }
         }
 
@@ -100,7 +116,7 @@ public class C2LSH {
                     }
 
                     if (candidateSet.size() >= minSize) {
-                        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+                        return candidateSet;
                     }
 
                 }

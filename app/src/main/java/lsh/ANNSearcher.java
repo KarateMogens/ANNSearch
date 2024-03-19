@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.HashMap;
+import java.util.Collection;
 
 public class ANNSearcher {
 
@@ -46,7 +47,7 @@ public class ANNSearcher {
         Set<Integer> candidateSet = new HashSet<>();
         
         for (Searchable searchable : searchables) {
-            List<Integer> searchResult = searchable.search(qVec);
+            Collection<Integer> searchResult = searchable.search(qVec);
             if (searchResult == null) {
                 continue;
             }
@@ -64,7 +65,7 @@ public class ANNSearcher {
         int[] frequency = new int[corpusMatrix.length];
 
         for (Searchable searchable : searchables) {
-            List<Integer> searchResult = searchable.search(qVec);
+            Collection<Integer> searchResult = searchable.search(qVec);
             if (searchResult == null) {
                 continue;
             }
@@ -142,7 +143,7 @@ public class ANNSearcher {
         HashMap<Integer, Float> corpusVotes = new HashMap<>();
 
         for (Searchable searchable : searchables) {
-            List<Integer> searchResult = searchable.search(qVec);
+            Collection<Integer> searchResult = searchable.search(qVec);
             if (searchResult == null) {
                 continue;
             }
@@ -170,6 +171,32 @@ public class ANNSearcher {
             super(errorMessage);
         }
 
+    }
+
+    public class Vote implements Comparable<Vote> {
+
+        private int cIndex;
+        private float votes;
+    
+        public int getcIndex() {
+            return cIndex;
+        }
+    
+        public float getVotes() {
+            return votes;
+        }
+    
+        public Vote(int cIndex, float votes) {
+            this.cIndex = cIndex;
+            this.votes = votes;
+        }
+    
+        public int compareTo(Vote that) {
+            if (this.votes > that.getVotes()) return 1;
+            if (this.votes < that.getVotes()) return -1;
+            return 0;
+        }
+    
     }
 
     
