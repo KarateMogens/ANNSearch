@@ -5,11 +5,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.random.*;
+import java.io.Serializable;
 
-import lsh.RKDTree.Dimension;
 
-
-public class RPTree extends Tree implements Searchable {
+public class RPTree extends Tree implements Searchable, Serializable {
 
     private SparseVector[] allRandomVectors;
 
@@ -163,7 +162,7 @@ public class RPTree extends Tree implements Searchable {
         }
     }
 
-    class SparseVector {
+    class SparseVector implements Serializable {
 
         private float[] vector;
         private List<Integer> nonZeroComponents;

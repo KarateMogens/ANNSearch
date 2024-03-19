@@ -38,13 +38,7 @@ public class App {
         try {
             //mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10);
             //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
-            List<Searchable> searchables = new LinkedList<>();
-            for (int i = 0; i < 10; i++) {
-                Searchable mySearchable = new RPTree(2);
-                mySearchable.fit(train);
-                searchables.add(mySearchable);
-            }
-            mySearch = new ANNSearcher(searchables, train);
+            mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
 
             //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
             int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
@@ -58,12 +52,13 @@ public class App {
             for (Integer neighbor : locatedNeighbors) {
                 System.out.println(neighbor);
                 if (actualNeighbors.contains(neighbor)) {
-                    System.out.println("Correct");
+                    System.out.println("Correct"); 
                 }
             }
         } 
-        //catch (FileNotFoundException e) {
-          //  e.printStackTrace();
+        catch (FileNotFoundException e) {
+             e.printStackTrace();
+        } 
         finally {
             System.out.println("whatever");
         }

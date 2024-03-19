@@ -53,7 +53,11 @@ public class ANNSearcherFactory {
 
     // ------------ Partition Tree ------------
 
-    public ANNSearcher getTreeSearcher(int maxLeafSize, int L) throws FileNotFoundException {
+    public ANNSearcher getTreeSearcher(int maxLeafSize, int L, String type) throws FileNotFoundException {
+
+        if (!type.equals("RP") || !type.equals("RKD")) {
+            // Throw exception
+        }
 
         if (DATASETFILENAME == null) {
             throw new FileNotFoundException("No dataset specified.");
@@ -62,13 +66,13 @@ public class ANNSearcherFactory {
         float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
-        File datastructure = getSuitableRKDForest(maxLeafSize, L);
+        File datastructure = getSuitableForest(maxLeafSize, L, type);
 
         if (datastructure == null) {
-            searchables = searchableRKDForest(maxLeafSize, L, corpusMatrix);
+            searchables = searchableForest(maxLeafSize, L, corpusMatrix, type);
             
             // Write searchables to disk
-            String fileName = String.format("RKDTree_%1$d_%2$d.ser", maxLeafSize, L);
+            String fileName = String.format(type + "Tree_%1$d_%2$d.ser", maxLeafSize, L);
             writeToDisk(searchables, DATADIRECTORY, fileName);
         } else {
 
@@ -81,25 +85,29 @@ public class ANNSearcherFactory {
         return new ANNSearcher(searchables, corpusMatrix);
     }
 
-    public ANNSearcher getNCTreeSearcher(int maxLeafSize, int L, int k) throws FileNotFoundException {
+    public ANNSearcher getNCTreeSearcher(int maxLeafSize, int L, String type, int k) throws FileNotFoundException {
 
-        ANNSearcher mySearcher = getTreeSearcher(maxLeafSize, L);
+        ANNSearcher mySearcher = getTreeSearcher(maxLeafSize, L, type);
         int[][] secondaryIndex = getSecondIndex(k, mySearcher.getCorpusMatrix());
         mySearcher.setSecondaryIndex(secondaryIndex, k);
         return mySearcher;
     }
 
-    private List<Searchable> searchableRKDForest(int maxLeafSize, int L, float[][] corpusMatrix) {
+    private List<Searchable> searchableForest(int maxLeafSize, int L, float[][] corpusMatrix, String type) {
         
         int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
         for (int l = 0; l < L; l++) {
-            Searchable RKDTree = new RKDTree(maxLeafSize);
-            RKDTree.fit(corpusMatrix);
-            searchables.add(l, RKDTree);
+            Searchable tree = null;
+            if (type.equals("RP")) {
+                tree = new RPTree(maxLeafSize);
+            } else if (type.equals("RKD")) {
+                tree = new RKDTree(maxLeafSize);
+            }
+            tree.fit(corpusMatrix);
+            searchables.add(l, tree);
         }
-
         return searchables;
     }
 
@@ -201,11 +209,11 @@ public class ANNSearcherFactory {
         return secondaryIndexMatrix;
     }
 
-    private File getSuitableRKDForest(int maxLeafSize, int L) {
+    private File getSuitableForest(int maxLeafSize, int L, String type) {
         File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
 
-        Pattern pattern = Pattern.compile("RKDTree_(\\d+)_(\\d+).ser");
+        Pattern pattern = Pattern.compile(type + "Tree_(\\d+)_(\\d+).ser");
 
         for (File file : files) {
             String fileName = file.getName();
@@ -217,7 +225,7 @@ public class ANNSearcherFactory {
             if (Integer.parseInt(match.group(2)) < L) {
                 continue;
             }
-            System.out.println("Loaded RKD from storage: " + file.getName());
+            System.out.println("Loaded Tree from storage: " + file.getName());
             return file;
         }
 
