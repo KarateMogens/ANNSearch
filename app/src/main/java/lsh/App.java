@@ -6,6 +6,10 @@ package lsh;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
+
+import javax.naming.directory.SearchResult;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -36,13 +40,14 @@ public class App {
         ANNSearcher mySearch;
 
         try {
-            //mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10);
+            //mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10, "RKD");
             //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
-            mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
-
+            //mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
+            //mySearch = knnsFactory.getC2LSHSearcher(50, 1000, 3, 1);
             //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
-            int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
+            //int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
             //int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
+            int[] locatedNeighbors = Utils.bruteForceKNN(train, test[0], 10);
             List<Integer> actualNeighbors = new LinkedList<>();
             for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {
                 actualNeighbors.add(i); 
@@ -56,9 +61,9 @@ public class App {
                 }
             }
         } 
-        catch (FileNotFoundException e) {
-             e.printStackTrace();
-        } 
+        //  catch (FileNotFoundException e) {
+        //    e.printStackTrace();
+        // } 
         finally {
             System.out.println("whatever");
         }

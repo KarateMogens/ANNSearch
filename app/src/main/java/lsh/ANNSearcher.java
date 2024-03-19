@@ -76,7 +76,11 @@ public class ANNSearcher {
                 };
 
             }
-        }   
+        }
+        
+        if (candidateSet.size() < k) {
+            //Throw some error
+        }
 
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }

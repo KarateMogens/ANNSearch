@@ -126,8 +126,8 @@ public class RPTree extends Tree implements Searchable, Serializable {
         // Create random vector with sparsity 1/sqrt(d)
         Random myRandom = new Random();
         for (int i = 0; i < nrDimensions; i++) {
-            float roll = myRandom.nextFloat();
-            if (roll < sparsity) {
+            float randValue = myRandom.nextFloat();
+            if (randValue < sparsity) {
                 // Non-zero components are given a value drawn from a Guassian distribution with mean 0.0 and standard deviation 1.0
                 randomVec[i] = (float) myRandom.nextGaussian();
                 nonZeroComponents.add(i);
@@ -138,7 +138,8 @@ public class RPTree extends Tree implements Searchable, Serializable {
         return new SparseVector(randomVec, nonZeroComponents);
     }
 
-    class ProjectionFactor implements Comparable<ProjectionFactor>{
+    class ProjectionFactor implements Comparable<ProjectionFactor> {
+
         int cIndex;
         float projFactor;
 

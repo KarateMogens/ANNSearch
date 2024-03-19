@@ -90,7 +90,6 @@ public class RKDTree extends Tree implements Searchable, Serializable {
             dimensionComponents[ctr] = corpusMatrix[cIndex][chosenDimension.getIndex()];
             ctr++;
         }
-
         chosenDimension.setSplitValue(Utils.calculateSplit(dimensionComponents));
 
         return chosenDimension;

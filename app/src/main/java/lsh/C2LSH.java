@@ -1,5 +1,6 @@
 package lsh;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,18 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Collection;
 
-
-/* NOT TESTED - ONLY ROUGH IMPLEMENTATION */
-public class C2LSH implements Searchable {
+public class C2LSH implements Searchable, Serializable {
 
     List<HashFunction> hashFunctions;
     List<Map<Integer,List<Integer>>> compoundHashTable;
+    final int c = 3;
     int d;
     int minSize;
     int threshold;
     int corpusMatrixSize;
 
-    public C2LSH(int d, int K) {
+    public C2LSH(int d, int K, int minSize, int threshold) {
         this.d = d;
         hashFunctions = new ArrayList<>(K);
         compoundHashTable = new ArrayList<>(K);
@@ -27,6 +27,8 @@ public class C2LSH implements Searchable {
             // Always set r to 1.
             hashFunctions.add(i, new HashFunction(d, 1));
         }
+        this.minSize = minSize;
+        this.threshold = threshold;
     }
 
     public void setMinSize(int minSize) {
@@ -41,11 +43,12 @@ public class C2LSH implements Searchable {
         this.corpusMatrixSize = corpusMatrix.length;
 
         for (int i = 0; i < hashFunctions.size(); i ++) {
-            // Create a map for each hashfunction, corresponding to a level-1 hashtable
+            // Create a map for each hashfunction where the key is a hashed value
+            // and the value is the corpus points that hash to the value
             Map<Integer, List<Integer>> hashTable = new HashMap<>();
+            // Hash all corpus points and add them to map
             for (int cIndex = 0; cIndex < corpusMatrix.length; cIndex++) {
                 int hashValue =  hashFunctions.get(i).hash(corpusMatrix[cIndex]);
-
                 if (hashTable.containsKey(hashValue)) {
                     hashTable.get(hashValue).add(cIndex);
                 } else {
@@ -60,71 +63,57 @@ public class C2LSH implements Searchable {
     }
 
     public Collection<Integer> search(float[] qVec) {
-
         if (minSize <= 0 || threshold <= 0 || corpusMatrixSize <= 0) {
             throw new IllegalArgumentException("minSize or threshold not specified");
         }
-       
-        HashSet<Integer> candidateSet = new HashSet<>();
-        int R = 1;
-        int c = 3;
-
-        // Initialization and first round
 
         // Vector to count frequency of corpusPoints
         int[] frequency = new int[corpusMatrixSize];
-
         PointerSet[] hashFunctionPointers = new PointerSet[compoundHashTable.size()];
-        for (int i = 0; i < compoundHashTable.size(); i++) {
+        HashSet<Integer> candidateSet = new HashSet<>();
 
-            // Initialize PointerSet with bid of qVec
-            int bid = hashFunctions.get(i).hash(qVec);
-            hashFunctionPointers[i] = new PointerSet(bid);
+        int oldR = 0;
+        int R = 1;
 
-            // Count frequency of corpusPoints in same lvl-1 bucket as qVec
-            List<Integer> bidBucket = compoundHashTable.get(i).get(bid);
-            for (Integer cIndex : bidBucket) {
-                if (++frequency[cIndex] == threshold) {
-                    candidateSet.add(cIndex);
-                }
-            }
-            
-            if (candidateSet.size() >= minSize) {
-                return candidateSet;
-            }
-        }
-
-        // Run until candidateSet has acceptable size
         while (true) {
-            int oldR = R;
-            R = c*R;
+            // Prepare pointers for new iteration
             for (int i = 0; i < compoundHashTable.size(); i++) {
-
-                hashFunctionPointers[i].increaseWidth(R);
+                if (R == 1) {
+                    // Initialize PointerSet with bid of qVec
+                    int bid = hashFunctions.get(i).hash(qVec);
+                    hashFunctionPointers[i] = new PointerSet(bid);
+                } else {
+                    // Rehashing (increasing bucket width)
+                    hashFunctionPointers[i].increaseWidth(R);
+                } 
             }
-
+            // Iterate until rehash is necessary
             for (int iteration = oldR; iteration < R; iteration++) {
+                // Count frequencies
                 for (int i = 0; i < compoundHashTable.size(); i++) {
-
-                    int nextBid = hashFunctionPointers[i].getNext();
-
+                    int nextBid = hashFunctionPointers[i].next();
                     List<Integer> bidBucket = compoundHashTable.get(i).get(nextBid);
+                    if (bidBucket == null) {
+                        continue;
+                    }
                     for (Integer cIndex : bidBucket) {
                         if (++frequency[cIndex] == threshold) {
                             candidateSet.add(cIndex);
                         }
                     }
-
-                    if (candidateSet.size() >= minSize) {
-                        return candidateSet;
-                    }
-
+                }
+                // Check if candidateset is large enough
+                if (candidateSet.size() >= minSize) {
+                    return candidateSet;
                 }
             }
+            // Not enough candidates found -> rehash
+            oldR = R;
+            R = R*c;
         }
     }
 
-    class PointerSet {
+    class PointerSet implements Serializable {
 
         int pStart;
         int pLeft;
@@ -145,15 +134,14 @@ public class C2LSH implements Searchable {
             pEnd = pStart + R-1;
         }
 
-        public int getNext() {
-            if (pStart != pLeft) {
+        public int next() {
+            if (pLeft != pStart) {
                 return --pLeft;
-            } else if (pEnd != pRight) {
+            } else if (pRight != pEnd) {
                 return ++pRight;
             }
-            // Must return something - should never actually be reached if query() is correct
+            // Used in the first iteration
             return bid;
-            
         }
     }
 
