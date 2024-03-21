@@ -2,6 +2,7 @@ package lsh;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
@@ -83,35 +84,46 @@ public class Utils {
         return normVec;
     }
 
-    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Iterable<Integer> candidateSet, int k) {
+    public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
+        
+        if (candidateSet.size() < k) {
+            // 
+            Distance[] kNeighbors = new Distance[k];
+            for (int i = 0; i < k; i++) {
+                kNeighbors[i] = new Distance(-1, -1);
+            }
+            return kNeighbors;
+        }
+        
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
         for (Integer index : candidateSet) {
-            float distance = euclideanDistance(qVec, corpusMatrix[index]);
+            float distance = euclideanSquareDistance(qVec, corpusMatrix[index]);
             maxHeap.add(new Distance(index, distance));
         }
 
-        int[] kNeighbors = new int[k];
+        Distance[] kNeighbors = new Distance[k];
         
         for (int i = 0; i < k; i++) {
-            kNeighbors[i] = maxHeap.poll().getcIndex();
+            kNeighbors[i] = maxHeap.poll();
         }
         
         return kNeighbors;
     }
 
-    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
+    public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
+
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
         for (int index = 0; index < corpusMatrix.length; index++) {
-            float distance = euclideanDistance(qVec, corpusMatrix[index]);
+            float distance = euclideanSquareDistance(qVec, corpusMatrix[index]);
             maxHeap.add(new Distance(index, distance));
         }
 
-        int[] kNeighbors = new int[k];
+        Distance[] kNeighbors = new Distance[k];
         
         for (int i = 0; i < k; i++) {
-            kNeighbors[i] = maxHeap.poll().getcIndex();
+            kNeighbors[i] = maxHeap.poll();
         }
         
         return kNeighbors;
@@ -204,7 +216,11 @@ public class Utils {
         int corpusSize = corpusMatrix.length;
         int[][] secondaryIndex = new int[corpusSize][];         
         for (int i = 0; i < corpusSize; i++) {
-            secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+            secondaryIndex[i] = new int[k];
+            Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+            for (int j = 0; k < result.length; j++) {
+                secondaryIndex[i][j] = result[i].cIndex;
+            }
         }
         return secondaryIndex;
     }
@@ -224,7 +240,12 @@ public class Utils {
 			final int to = (t+1 == taskCount) ? corpusSize : perTask * (t + 1);
 			myFutures[t] = pool.submit(() -> {
 				for (int i = from; i < to; i++){
-					secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+                    secondaryIndex[i] = new int[k];
+                    Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
+                    for (int j = 0; k < result.length; j++) {
+                        secondaryIndex[i][j] = result[i].cIndex;
+                    }
+					
 				}
                 System.out.println("Done");
             });

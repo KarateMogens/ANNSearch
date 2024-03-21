@@ -1,6 +1,7 @@
 package lsh;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -35,7 +36,7 @@ public class RPTree extends Tree implements Searchable, Serializable {
         super.setRoot(createTree(corpusMatrix, allPoints, 0));
     }
 
-    public List<Integer> search(float[] qVec) {
+    public Collection<Integer> search(float[] qVec) {
 
         Node currentNode = super.getRoot();
 

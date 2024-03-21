@@ -21,7 +21,9 @@ import java.util.regex.*;
 public class ANNSearcherFactory {
 
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
+    //private static final String RESOURCEDIRECTORY = "./";
     private static final String RESOURCEDIRECTORY = "app/src/main/resources/";
+    
     private static String DATASETFILENAME;
     private static String DATASET;
     private static String DATADIRECTORY;
@@ -236,6 +238,7 @@ public class ANNSearcherFactory {
     }
 
     private Object readFromDisk(String directory, File targetFile) {
+        System.out.println("Started loading");
         try (ObjectInputStream myStream = new ObjectInputStream(
                 new FileInputStream(directory + targetFile.getName()))) {
             return myStream.readObject();
@@ -243,6 +246,8 @@ public class ANNSearcherFactory {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } finally {
+            System.out.println("Finished loading");
         }
         return null;
     }

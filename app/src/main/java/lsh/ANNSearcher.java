@@ -42,7 +42,8 @@ public class ANNSearcher {
 
     /* ----------- SEARCH STRATEGIES ----------- */
 
-    public int[] lookupSearch(float[] qVec, int k) {
+    public Utils.Distance[] lookupSearch(float[] qVec, int k) {
+
 
         Set<Integer> candidateSet = new HashSet<>();
         
@@ -56,11 +57,10 @@ public class ANNSearcher {
         }
 
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
-
     }
 
-    public int[] votingSearch(float[] qVec, int k, int threshold) {
-
+    public Utils.Distance[] votingSearch(float[] qVec, int k, int threshold) {
+    
         Set<Integer> candidateSet = new HashSet<>();
         int[] frequency = new int[corpusMatrix.length];
 
@@ -77,15 +77,11 @@ public class ANNSearcher {
 
             }
         }
-        
-        if (candidateSet.size() < k) {
-            //Throw some error
-        }
 
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }
 
-    public int[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
+    public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
 
         if (this.neighborsTable[0].length != k) {
             throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured.");
@@ -106,19 +102,19 @@ public class ANNSearcher {
 
     }
 
-    public int[] naturalClassifierSearch(float[] qVec, int k, int candidateSetSize) {
+    public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, int candidateSetSize) {
         
         if (this.neighborsTable[0].length != k) {
             throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured. Expected length " + k + ", table has length  " + this.neighborsTable[0].length + ".");
         }
-
+        
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
-
+        
         // If max candidatesetsize note reached, all elements are part of C
         if (corpusVotes.size() < candidateSetSize) {
-            return Utils.bruteForceKNN(corpusMatrix, qVec, corpusVotes.keySet(),  k);
+            return Utils.bruteForceKNN(corpusMatrix, qVec, corpusVotes.keySet(), k);
         }
-
+        
         // Convert all vote entries into an array which is compatible with quickSelect.
         Vote[] votes = new Vote[corpusVotes.size()];
         int ctr = 0;
@@ -132,7 +128,7 @@ public class ANNSearcher {
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
         }
-
+        
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
@@ -169,12 +165,48 @@ public class ANNSearcher {
         return corpusVotes;
     }
 
+    public Utils.Distance[] bruteForceSearch(float[] qVec, int k) {
+        
+        return Utils.bruteForceKNN(corpusMatrix, qVec, k);
+        
+    }
+
     class NeighborTablConfigurationException extends RuntimeException {
 
         public NeighborTablConfigurationException(String errorMessage) {
             super(errorMessage);
         }
 
+    }
+
+    public class Result {
+        
+        private int[] neighbors;
+        private double time;
+        private float[] distances;
+
+        public Result(Utils.Distance[] kNeighbors, double time) {
+            this.neighbors = new int[kNeighbors.length];
+            this.distances = new float[kNeighbors.length];
+
+            for (int i = 0; i < kNeighbors.length; i++) {
+                neighbors[i] = kNeighbors[i].getcIndex();
+                distances[i] = kNeighbors[i].getDistanceToQ();
+            }
+            this.time = time;
+        }
+    
+        public int[] getNeighbors() {
+            return neighbors;
+        }
+
+        public double getTime() {
+            return time;
+        }
+
+        public float[] getDistances() {
+            return distances;
+        }
     }
 
     public class Vote implements Comparable<Vote> {

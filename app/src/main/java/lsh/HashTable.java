@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -62,7 +63,7 @@ public class HashTable implements Searchable, Serializable {
         }
     }   
 
-    public List<Integer> search(float[] qVec) {
+    public Collection<Integer> search(float[] qVec) {
         long bin = getBin(qVec);
         return hashIndex.get(bin);
     }

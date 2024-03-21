@@ -1,6 +1,7 @@
 package lsh;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -96,7 +97,7 @@ public class RKDTree extends Tree implements Searchable, Serializable {
 
     }
 
-    public List<Integer> search(float[] qvec) {
+    public Collection<Integer> search(float[] qvec) {
         Node currentNode = super.getRoot();
 
         while (!currentNode.getIsLeaf()) {

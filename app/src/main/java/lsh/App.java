@@ -5,9 +5,10 @@ package lsh;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.URL;
 import java.util.List;
 
-import javax.naming.directory.SearchResult;
+import org.apache.velocity.runtime.resource.loader.ResourceLoader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,54 +20,63 @@ import ch.systemsx.cisd.hdf5.*;
 public class App {
 
 
-    public static void main(String[] args) {
-     
+    public static void main(String[] args) { 
+        
+        //String FILEPATH = "./fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         String FILEPATH = "app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
-        String FILENAME = "fashion-mnist-784-euclidean.hdf5";
-    
+        
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
         float[][] test = reader.readFloatMatrix("test");
         int[][] neighbors = reader.readIntMatrix("neighbors");
         float[][] train = reader.readFloatMatrix("train");
         reader.close();
-
-        ANNSearcherFactory knnsFactory = ANNSearcherFactory.getInstance();
-        try {  
-            knnsFactory.setDataset(FILENAME);
+        
+        ANNSearcherFactory factory = ANNSearcherFactory.getInstance();
+        ANNSearcher myAnnSearcher = null;
+        try {
+            factory.setDataset("fashion-mnist-784-euclidean.hdf5");
+            myAnnSearcher = factory.getLSHSearcher(2, 200, 30);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-    
-        ANNSearcher mySearch;
-
-        try {
-            //mySearch = knnsFactory.getNCTreeSearcher(32, 4, 10, "RKD");
-            //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
-            //mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
-            //mySearch = knnsFactory.getC2LSHSearcher(50, 1000, 3, 1);
-            //int[] locatedNeighbors = mySearch.votingSearch(test[0], 10, 2);
-            //int[] locatedNeighbors = mySearch.lookupSearch(test[0], 10);
-            //int[] locatedNeighbors = mySearch.naturalClassifierSearch(test[0], 10, 1000);
-            int[] locatedNeighbors = Utils.bruteForceKNN(train, test[0], 10);
-            List<Integer> actualNeighbors = new LinkedList<>();
-            for (int i : Arrays.copyOfRange(neighbors[0], 0, 10)) {
-                actualNeighbors.add(i); 
-            }
-            System.out.println(actualNeighbors.toString());
         
-            for (Integer neighbor : locatedNeighbors) {
-                System.out.println(neighbor);
-                if (actualNeighbors.contains(neighbor)) {
-                    System.out.println("Correct"); 
-                }
-            }
-        } 
+        MicroBenchmark benchmark = new MicroBenchmark();
+        MicroBenchmark.Results results = benchmark.benchmark(myAnnSearcher, test, "lookupSearch", 10);
+        
+        results.statistics();
+        System.out.println("Mean: " + results.getMeanQueryTime());
+        System.out.println("Std. dev: " + results.getStandardDeviation());
+        System.out.println("Max: " + results.getMaxTime());
+        System.out.println("Min: " + results.getMinTime());
+        // ANNSearcherFactory knnsFactory = ANNSearcherFactory.getInstance();
+        // try {  
+            //     knnsFactory.setDataset(FILENAME);
+            // } catch (FileNotFoundException e) {
+                //     e.printStackTrace();
+                // }
+                
+                // ANNSearcher mySearch;
+                
+        // try {
+        //     mySearch = knnsFactory.getNCTreeSearcher(32, 10, "RKD", 10);
+        //     //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
+        //     //mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
+        //     //mySearch = knnsFactory.getC2LSHSearcher(50, 1000, 3, 1);
+        //     List<Utils.Distance[]> allResults = new ArrayList<>(test.length);
+        //     float[] times = new float[test.length];
+        //     for (int i = 0; i < test.length; i++) {
+        //         allResults.add(i, mySearch.naturalClassifierSearch(test[i], 10, 400));
+        //     }
+        //     System.out.println(Utils.mean(times));
+            
+        
+        // } 
         //  catch (FileNotFoundException e) {
         //    e.printStackTrace();
         // } 
-        finally {
-            System.out.println("whatever");
-        }
+        // finally {
+        //     System.out.println("whatever");
+        // }
         
 
         

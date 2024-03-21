@@ -49,6 +49,16 @@ application {
     mainClass.set("lsh.App")
 }
 
+tasks.jar {
+    manifest.attributes["Main-Class"] = "lsh.App"
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree) // OR .map { zipTree(it) }
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
     testLogging {
