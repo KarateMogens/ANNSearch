@@ -22,32 +22,25 @@ public class ANNSearcherFactory {
 
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
     //private static final String RESOURCEDIRECTORY = "./";
-    private static final String RESOURCEDIRECTORY = "app/src/main/resources/";
+    //private static final String RESOURCEDIRECTORY = "app/src/main/resources/";
     
     private static String DATASETFILENAME;
     private static String DATASET;
     private static String DATADIRECTORY;
 
-    private ANNSearcherFactory() {
-    }
+    private ANNSearcherFactory() {}
 
     public static ANNSearcherFactory getInstance() {
         return factory;
     }
 
-    public void setDataset(String datasetFileName) throws FileNotFoundException {
+    public void setDataset(String datasetURLString) throws FileNotFoundException {
 
-        String datasetName = datasetFileName.substring(0, datasetFileName.lastIndexOf("."));
-        String datadirectory = String.format(RESOURCEDIRECTORY + "%s/",
-                datasetName);
-
-        // Check if corpus file exists
-        if (!Utils.fileExists(datadirectory + datasetFileName)) {
-            throw new FileNotFoundException("The dataset does not exist. Please make sure dataset " + datasetFileName + " exists and is placed in the directory: " + RESOURCEDIRECTORY);
-        }
+        String datasetName = datasetURLString.substring(datasetURLString.lastIndexOf("/") + 1, datasetURLString.lastIndexOf("."));
+        String datadirectory = datasetURLString.substring(0, datasetURLString.lastIndexOf("/") + 1);
 
         DATASET = datasetName;
-        DATASETFILENAME = datasetFileName;
+        DATASETFILENAME = datasetURLString;
         DATADIRECTORY = datadirectory;
 
     }
@@ -55,7 +48,7 @@ public class ANNSearcherFactory {
 
     // ------------ Partition Tree ------------
 
-    public ANNSearcher getTreeSearcher(int maxLeafSize, int L, String type) throws FileNotFoundException {
+    private ANNSearcher getTreeSearcher(int maxLeafSize, int L, String type) throws FileNotFoundException {
 
         if (!type.equals("RP") || !type.equals("RKD")) {
             // Throw exception
@@ -115,7 +108,7 @@ public class ANNSearcherFactory {
 
     // ------------ CLASSIC LSH ------------
 
-    public ANNSearcher getLSHSearcher(int K, float r, int L) throws FileNotFoundException {
+    private ANNSearcher getLSHSearcher(int K, float r, int L) throws FileNotFoundException {
 
         if (DATASETFILENAME == null) {
             throw new FileNotFoundException("No dataset specified.");
@@ -254,7 +247,7 @@ public class ANNSearcherFactory {
 
     private float[][] getCorpusMatrix() {
 
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATADIRECTORY + DATASETFILENAME));
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
         return reader.readFloatMatrix("train");
     }
 

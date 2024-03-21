@@ -2,8 +2,6 @@ package lsh;
 
 import java.lang.reflect.*;
 
-import lsh.MicroBenchmark.Timer;
-
 public class MicroBenchmark {
  
     Timer timer = new Timer();
@@ -15,15 +13,22 @@ public class MicroBenchmark {
         float[] time = new float[testSet.length];
 
         try {
-            Object[] parameterTest = combineArrays(testSet[0], searchParameters);
-            Method method = ANNSearcher.class.getMethod(searchStrategy, getParameterTypes(parameterTest));
+            // Use dummy qVec to access right method
+            Object[] parameters = combineArrays(testSet[0], searchParameters);
+            Method method = ANNSearcher.class.getMethod(searchStrategy, getParameterTypes(parameters));
+
+            // Test all qVecs in testSet
             for (int i = 0; i < testSet.length; i++) {
                 
-                Object[] parameters = combineArrays(testSet[i], searchParameters);
+                // Set parameter to correct qVec
+                parameters[0] = testSet[i];
+
+                // Actual timing
                 timer.play();
                 Utils.Distance[] result = (Utils.Distance[]) method.invoke(searcher, parameters);
                 time[i] = (float) timer.check();
 
+                // Write results to results arrays
                 distances[i] = new float[result.length];
                 neighbors[i] = new int[result.length];
                 for (int j = 0; j < result.length; j++) {
@@ -39,6 +44,7 @@ public class MicroBenchmark {
     }
 
     private Class<?>[] getParameterTypes(Object[] parameters) {
+        // Get correct parametertypes to locate specified method
         Class<?>[] parameterTypes = new Class<?>[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
             parameterTypes[i] = getParameterType(parameters[i]);
@@ -54,6 +60,7 @@ public class MicroBenchmark {
     }
 
     private Class<?> getParameterType(Object parameter) {
+        // Since all primitive types are auto-boxed in the array Object[] parameters, primitive types need to be cast back.
         if (parameter instanceof Integer) {
             return int.class;
         } else if (parameter instanceof Integer[]) {
@@ -62,10 +69,13 @@ public class MicroBenchmark {
             return float.class;
         } else if (parameter instanceof Float[]) {
             return float[].class;
+        } else if (parameter instanceof Double) {
+            return double.class;
+        } else if (parameter instanceof Double[]) {
+            return double[].class;
         } else {
             return parameter.getClass();
         }
-
     }
 
     class Timer {

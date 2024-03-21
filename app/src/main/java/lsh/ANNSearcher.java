@@ -102,7 +102,7 @@ public class ANNSearcher {
 
     }
 
-    public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, int candidateSetSize) {
+    public Utils.Distance[] naturalClassifierSearchSetSize(float[] qVec, int k, int candidateSetSize) {
         
         if (this.neighborsTable[0].length != k) {
             throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured. Expected length " + k + ", table has length  " + this.neighborsTable[0].length + ".");

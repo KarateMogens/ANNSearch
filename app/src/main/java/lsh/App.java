@@ -4,83 +4,177 @@
 package lsh;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.URL;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
-import org.apache.velocity.runtime.resource.loader.ResourceLoader;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.HashMap;
 
 import ch.systemsx.cisd.hdf5.*;
 
 
 public class App {
 
+    Map<String, Method> datastructures;
+    ANNSearcherFactory factory = ANNSearcherFactory.getInstance();
+    Properties configProperties;
+    float[][] test;
+    int[][] neighbors;
+    float[][] train;
 
-    public static void main(String[] args) { 
-        
-        //String FILEPATH = "./fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
-        String FILEPATH = "app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
-        
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
-        float[][] test = reader.readFloatMatrix("test");
-        int[][] neighbors = reader.readIntMatrix("neighbors");
-        float[][] train = reader.readFloatMatrix("train");
-        reader.close();
-        
-        ANNSearcherFactory factory = ANNSearcherFactory.getInstance();
-        ANNSearcher myAnnSearcher = null;
+    public App(String configFilePath) {
+
+        configProperties = new Properties();
         try {
-            factory.setDataset("fashion-mnist-784-euclidean.hdf5");
-            myAnnSearcher = factory.getLSHSearcher(2, 200, 30);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            configProperties.load(new FileInputStream(new File(configFilePath)));
+        } catch (IOException e){
+            System.out.println("The specified path is not a .properties file");
+        }
+
+        String datasetFilePath = getProperty("datasetPath");
+
+        // Check if corpus file exists
+        if (!Utils.fileExists(datasetFilePath)) {
+            System.out.println("No file found at the following: " + datasetFilePath);
         }
         
-        MicroBenchmark benchmark = new MicroBenchmark();
-        MicroBenchmark.Results results = benchmark.benchmark(myAnnSearcher, test, "lookupSearch", 10);
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(datasetFilePath));
+        test = reader.readFloatMatrix("test");
+        neighbors = reader.readIntMatrix("neighbors");
+        train = reader.readFloatMatrix("train");
+        reader.close();
+
+        setDataStructureMethods();
+    }
+
+    private void setDataStructureMethods() {
+        datastructures = new HashMap<>();
+        try {
+            datastructures.put("RKDTree", ANNSearcherFactory.class.getMethod("getNCTreeSearcher", new Class<?>[] {int.class, int.class, String.class, int.class}));
+            datastructures.put("RPTree", ANNSearcherFactory.class.getMethod("getNCTreeSearcher", new Class<?>[] {int.class, int.class, String.class, int.class}));
+            datastructures.put("LSH", ANNSearcherFactory.class.getMethod("getNCLSHSearcher", new Class<?>[] {int.class, float.class, int.class, int.class}));
+            datastructures.put("C2LSH", ANNSearcherFactory.class.getMethod("getNCC2LSHSearcher", new Class<?>[] {int.class, int.class, int.class, int.class, int.class}));
+        } catch (NoSuchMethodException e) {
+            System.out.println("Error setting up datastructure methods");
+        }
         
+    }
+
+    private void runBenchmarks() {
+        try {
+            factory.setDataset(configProperties.getProperty("datasetPath"));
+        } catch (FileNotFoundException e) {
+            System.out.println("Datasetpath does not lead to a valid .hdf5 file");
+        }
+
+        MicroBenchmark benchmark = new MicroBenchmark();
+
+        String datastructure = getProperty("datastructure");
+        String[] datastructureArgs = getPropertyList("datastructureArgs");
+        String searchStrategy = getProperty("searchStrategy");
+        String[] searchStrategyArgs = getPropertyList("searchStrategyArgs");  
+
+        for (String datastructureArgList : datastructureArgs) {
+            String[] args = getArgs(datastructureArgList);
+            ANNSearcher searcher = getSearcher(datastructure, args);
+
+            for (String searchStrategyArgsList : searchStrategyArgs) {
+                MicroBenchmark.Results results = null;
+                String[] strategyArgs = getArgs(searchStrategyArgsList);
+                if (searchStrategy.equals("lookupSearch")) {
+                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                } else if (searchStrategy.equals("votingSearch")) {
+                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                } else if (searchStrategy.equals("naturalClassifierSearch")) {
+                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
+                } else if (searchStrategy.equals("naturalClassifierSearchSetSize")) {
+                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                } else if (searchStrategy.equals("bruteForceSearch")) {
+                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                }
+                printStats(results);
+            }
+        }
+    }
+    
+    private ANNSearcher getSearcher(String datastructure, String[] args) {
+        try {
+            if (datastructure.equals("RKDTree")) {
+                Method caller = datastructures.get("RKDTree");
+                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]), "RKD", Integer.valueOf(args[2]));
+            } else if (datastructure.equals("RPTree")) {
+                Method caller = datastructures.get("RPTree");
+                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]), "RP", Integer.valueOf(args[2]));
+            } else if (datastructure.equals("LSH")) {
+                Method caller = datastructures.get("LSH");
+                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Float.valueOf(args[1]),  Integer.valueOf(args[2]), Integer.valueOf(args[3]));
+            } else if (datastructure.equals("C2LSH")) {
+                Method caller = datastructures.get("C2LSH");
+                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]),  Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4]));
+            } else {
+                System.out.println("Error getting datastructure");
+            }
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String getProperty(String key) {
+        return configProperties.getProperty(key).trim();
+    }
+
+    private String[] getArgs(String argsString) {
+        return argsString.trim().split(" +");
+    }
+
+    private String[] getPropertyList(String key) {
+        return getProperty(key).split(";");
+    }
+
+    private void printStats(MicroBenchmark.Results results) {
         results.statistics();
         System.out.println("Mean: " + results.getMeanQueryTime());
         System.out.println("Std. dev: " + results.getStandardDeviation());
         System.out.println("Max: " + results.getMaxTime());
         System.out.println("Min: " + results.getMinTime());
-        // ANNSearcherFactory knnsFactory = ANNSearcherFactory.getInstance();
-        // try {  
-            //     knnsFactory.setDataset(FILENAME);
-            // } catch (FileNotFoundException e) {
-                //     e.printStackTrace();
-                // }
-                
-                // ANNSearcher mySearch;
-                
-        // try {
-        //     mySearch = knnsFactory.getNCTreeSearcher(32, 10, "RKD", 10);
-        //     //mySearch = knnsFactory.getLSHSearcher(2, 1.0f, 50);
-        //     //mySearch = knnsFactory.getTreeSearcher(32, 5, "RP");
-        //     //mySearch = knnsFactory.getC2LSHSearcher(50, 1000, 3, 1);
-        //     List<Utils.Distance[]> allResults = new ArrayList<>(test.length);
-        //     float[] times = new float[test.length];
-        //     for (int i = 0; i < test.length; i++) {
-        //         allResults.add(i, mySearch.naturalClassifierSearch(test[i], 10, 400));
-        //     }
-        //     System.out.println(Utils.mean(times));
-            
         
-        // } 
-        //  catch (FileNotFoundException e) {
-        //    e.printStackTrace();
-        // } 
-        // finally {
-        //     System.out.println("whatever");
-        // }
-        
+        //Calculate recall
+        int[][] neighborsFound = results.getNeighbors();
+        float[] recalls = new float[neighborsFound.length];
+        for (int i = 0; i < neighborsFound.length; i++) {
+            float recall = 0;
+            List<Integer> trueNeighbors = Arrays.stream(neighbors[i])     // IntStream
+                         .boxed()             // Stream<Integer>
+                         .collect(Collectors.toList());
+            for (int j = 0; j < neighborsFound[i].length; j++) {
+                if (trueNeighbors.contains(neighborsFound[i][j])) {
+                    recall += 1.0f;
+                }
+            }
+            recalls[i] = recall / neighborsFound[i].length;
+        }
+        System.out.println("Mean recall is: " + Utils.mean(recalls));
+    }
 
-        
 
+    public static void main(String[] args) { 
+        
+        App myApp = new App("app/src/main/resources/config.properties");
+        myApp.runBenchmarks();
+
+    
         // ------------ ERROR FINDING IN GROUND TRUTH -----------------------------
         // String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         // FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth.h5";
