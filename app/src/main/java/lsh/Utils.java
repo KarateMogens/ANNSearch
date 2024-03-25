@@ -84,6 +84,14 @@ public class Utils {
         return normVec;
     }
 
+    public static float[][] normalizeCorpus(float[][] corpus) {
+        float[][] corpusCopy = Arrays.copyOf(corpus, corpus.length);
+        for (int i = 0; i < corpusCopy.length; i++) {
+            corpusCopy[i] = normalize(corpusCopy[i]);
+        }
+        return corpusCopy;
+    }
+
     public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
         
         if (candidateSet.size() < k) {
@@ -218,8 +226,8 @@ public class Utils {
         for (int i = 0; i < corpusSize; i++) {
             secondaryIndex[i] = new int[k];
             Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
-            for (int j = 0; k < result.length; j++) {
-                secondaryIndex[i][j] = result[i].cIndex;
+            for (int j = 0; j < result.length; j++) {
+                secondaryIndex[i][j] = result[j].cIndex;
             }
         }
         return secondaryIndex;
@@ -230,7 +238,7 @@ public class Utils {
         int corpusSize = corpusMatrix.length;
         int[][] secondaryIndex = new int[corpusSize][];
 
-        ExecutorService pool = new ForkJoinPool();
+        ExecutorService pool = new ForkJoinPool(1);
 		final int perTask = 1000;
         final int taskCount = corpusSize/perTask;
         Future<?>[] myFutures = new Future<?>[taskCount];
@@ -242,8 +250,8 @@ public class Utils {
 				for (int i = from; i < to; i++){
                     secondaryIndex[i] = new int[k];
                     Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
-                    for (int j = 0; k < result.length; j++) {
-                        secondaryIndex[i][j] = result[i].cIndex;
+                    for (int j = 0; j < result.length; j++) {
+                        secondaryIndex[i][j] = result[j].cIndex;
                     }
 					
 				}

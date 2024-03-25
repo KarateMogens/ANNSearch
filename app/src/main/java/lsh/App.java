@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -15,13 +14,17 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import java.util.Arrays;
-import java.util.HashMap;
 
 import ch.systemsx.cisd.hdf5.*;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 public class App {
 
+    private static final Logger logger = LogManager.getLogger(App.class);
+    
     Map<String, Method> datastructures;
     ANNSearcherFactory factory = ANNSearcherFactory.getInstance();
     Properties configProperties;
@@ -31,49 +34,43 @@ public class App {
 
     public App(String configFilePath) {
 
+        logger.info("Starting application");
+
+        // Load config gile
         configProperties = new Properties();
         try {
             configProperties.load(new FileInputStream(new File(configFilePath)));
+            logger.info("Successfully loaded configfile: " + configFilePath);
         } catch (IOException e){
-            System.out.println("The specified path is not a .properties file");
+            logger.error(".properties file not found");
         }
-
-        String datasetFilePath = getProperty("datasetPath");
 
         // Check if corpus file exists
+        String datasetFilePath = getProperty("datasetPath");
         if (!Utils.fileExists(datasetFilePath)) {
-            System.out.println("No file found at the following: " + datasetFilePath);
+            logger.error("No dataset file located at the specified directory: " + datasetFilePath);
+            return;
         }
         
+        // Load dataset file
         IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(datasetFilePath));
         test = reader.readFloatMatrix("test");
         neighbors = reader.readIntMatrix("neighbors");
         train = reader.readFloatMatrix("train");
         reader.close();
 
-        setDataStructureMethods();
-    }
+        String metric = getProperty("metric");
 
-    private void setDataStructureMethods() {
-        datastructures = new HashMap<>();
-        try {
-            datastructures.put("RKDTree", ANNSearcherFactory.class.getMethod("getNCTreeSearcher", new Class<?>[] {int.class, int.class, String.class, int.class}));
-            datastructures.put("RPTree", ANNSearcherFactory.class.getMethod("getNCTreeSearcher", new Class<?>[] {int.class, int.class, String.class, int.class}));
-            datastructures.put("LSH", ANNSearcherFactory.class.getMethod("getNCLSHSearcher", new Class<?>[] {int.class, float.class, int.class, int.class}));
-            datastructures.put("C2LSH", ANNSearcherFactory.class.getMethod("getNCC2LSHSearcher", new Class<?>[] {int.class, int.class, int.class, int.class, int.class}));
-        } catch (NoSuchMethodException e) {
-            System.out.println("Error setting up datastructure methods");
+        if (metric.equals("angular")) {
+            train = Utils.normalizeCorpus(train);
+            test = Utils.normalizeCorpus(test);
         }
-        
     }
 
     private void runBenchmarks() {
-        try {
-            factory.setDataset(configProperties.getProperty("datasetPath"));
-        } catch (FileNotFoundException e) {
-            System.out.println("Datasetpath does not lead to a valid .hdf5 file");
-        }
 
+        factory.setDataset(configProperties.getProperty("datasetPath"), getProperty("metric"));
+    
         MicroBenchmark benchmark = new MicroBenchmark();
 
         String datastructure = getProperty("datastructure");
@@ -82,61 +79,73 @@ public class App {
         String[] searchStrategyArgs = getPropertyList("searchStrategyArgs");  
 
         for (String datastructureArgList : datastructureArgs) {
+
             String[] args = getArgs(datastructureArgList);
             ANNSearcher searcher = getSearcher(datastructure, args);
 
             for (String searchStrategyArgsList : searchStrategyArgs) {
                 MicroBenchmark.Results results = null;
                 String[] strategyArgs = getArgs(searchStrategyArgsList);
-                if (searchStrategy.equals("lookupSearch")) {
-                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
-                } else if (searchStrategy.equals("votingSearch")) {
-                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
-                } else if (searchStrategy.equals("naturalClassifierSearch")) {
-                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
-                } else if (searchStrategy.equals("naturalClassifierSearchSetSize")) {
-                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
-                } else if (searchStrategy.equals("bruteForceSearch")) {
-                    results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+
+                // Call correct benchmarking method based on searchstrategy and search arguments
+                logger.info("Benchmarking: " + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
+                switch (searchStrategy) {
+                    case "lookupSearch":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                        break;
+                    case "votingSearch":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                        break;
+                    case "naturalClassifierSearch":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
+                        break;
+                    case "naturalClassifierSearchSetSize":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                        break;
+                    case "bruteForceSearch":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                        break;
+                    default:
+                        logger.error("Error calling search strategy: " + searchStrategy + ". Search strategy is not valid");
+                        continue;
                 }
+                // Print benchmarking results to terminal
+                // TODO: Implement HDF5 writing from results.
+                System.out.println("\n" + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
                 printStats(results);
+                System.out.println("\n");
+                writeResults(results, datastructure, args, searchStrategy, strategyArgs);
             }
         }
     }
-    
+
+
     private ANNSearcher getSearcher(String datastructure, String[] args) {
+        // Return the ANNSearch object based on arguments from config file
         try {
-            if (datastructure.equals("RKDTree")) {
-                Method caller = datastructures.get("RKDTree");
-                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]), "RKD", Integer.valueOf(args[2]));
-            } else if (datastructure.equals("RPTree")) {
-                Method caller = datastructures.get("RPTree");
-                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]), "RP", Integer.valueOf(args[2]));
-            } else if (datastructure.equals("LSH")) {
-                Method caller = datastructures.get("LSH");
-                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Float.valueOf(args[1]),  Integer.valueOf(args[2]), Integer.valueOf(args[3]));
-            } else if (datastructure.equals("C2LSH")) {
-                Method caller = datastructures.get("C2LSH");
-                return (ANNSearcher) caller.invoke(factory, Integer.valueOf(args[0]), Integer.valueOf(args[1]),  Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4]));
-            } else {
-                System.out.println("Error getting datastructure");
-            }
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            switch (datastructure) {
+                case "RKDTree":
+                    return factory.getNCTreeSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]), "RKD", Integer.parseInt(args[2]));
+                case "RPTree":
+                    return factory.getNCTreeSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]), "RP", Integer.parseInt(args[2]));
+                case "LSH":
+                    return factory.getNCLSHSearcher(Integer.parseInt(args[0]), Float.parseFloat(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+                case "C2LSH":
+                    return factory.getNCC2LSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]),  Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+            }   
+        } catch (FileNotFoundException e) {
+            logger.error("Error getting datastructure: " + datastructure + "with arguments: " + Arrays.toString(args));
         }
         return null;
     }
 
-    private String getProperty(String key) {
-        return configProperties.getProperty(key).trim();
-    }
 
     private String[] getArgs(String argsString) {
         return argsString.trim().split(" +");
+    }
+
+    private String getProperty(String key) {
+        return configProperties.getProperty(key).trim();
     }
 
     private String[] getPropertyList(String key) {
@@ -165,16 +174,57 @@ public class App {
             }
             recalls[i] = recall / neighborsFound[i].length;
         }
-        System.out.println("Mean recall is: " + Utils.mean(recalls));
+        System.out.println("Mean recall: " + Utils.mean(recalls));
     }
 
+    private void writeResults(MicroBenchmark.Results results, String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
+        String identifier = createIdentifier(datastructure, datastructureArgs, searchStrategy, searchStrategyArgs);
+        File resultsFile = createHDF5(results, identifier);
+        IHDF5SimpleWriter writer = HDF5FactoryProvider.get().open(resultsFile);
+        writer.writeIntMatrix("neighbors", results.getNeighbors());
+        writer.writeFloatMatrix("distances", results.getDistances());
+        writer.writeFloatArray("times", results.getQueryTimes());
+        
+    }
+
+    private String createIdentifier(String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(datastructure);
+        for (String arg : datastructureArgs) {
+            builder.append(arg);
+            builder.append("_");
+        }
+        builder.append(searchStrategy);
+        for (String arg : searchStrategyArgs) {
+            builder.append(arg);
+            builder.append("_");
+        }
+        builder.deleteCharAt(builder.length()-1);
+        return builder.toString();
+    }
+
+    private File createHDF5(MicroBenchmark.Results results, String identifier) {
+        String datasetFilePath = getProperty("datasetPath");
+        datasetFilePath = datasetFilePath.substring(0, datasetFilePath.lastIndexOf("/") + 1);
+        File resultsFile = new File(datasetFilePath + identifier + ".hdf5");
+        try {   
+            resultsFile.createNewFile();
+            return resultsFile;
+        } catch (IOException exception) {
+            logger.error("There was an error creating a results file for the benchmark");
+            return null;
+        }
+    }
 
     public static void main(String[] args) { 
-        
         App myApp = new App("app/src/main/resources/config.properties");
-        myApp.runBenchmarks();
+        //App myApp = new App(args[0]);
 
-    
+        
+        myApp.runBenchmarks();
+        logger.info("Terminating application");
+
+
         // ------------ ERROR FINDING IN GROUND TRUTH -----------------------------
         // String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
         // FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth.h5";

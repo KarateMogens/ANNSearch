@@ -18,15 +18,18 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.regex.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ANNSearcherFactory {
 
+    private static final Logger logger = LogManager.getLogger(ANNSearcherFactory.class);
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
-    //private static final String RESOURCEDIRECTORY = "./";
-    //private static final String RESOURCEDIRECTORY = "app/src/main/resources/";
-    
+   
     private static String DATASETFILENAME;
     private static String DATASET;
     private static String DATADIRECTORY;
+    private String metric;
 
     private ANNSearcherFactory() {}
 
@@ -34,7 +37,7 @@ public class ANNSearcherFactory {
         return factory;
     }
 
-    public void setDataset(String datasetURLString) throws FileNotFoundException {
+    public void setDataset(String datasetURLString, String metric) {
 
         String datasetName = datasetURLString.substring(datasetURLString.lastIndexOf("/") + 1, datasetURLString.lastIndexOf("."));
         String datadirectory = datasetURLString.substring(0, datasetURLString.lastIndexOf("/") + 1);
@@ -42,6 +45,8 @@ public class ANNSearcherFactory {
         DATASET = datasetName;
         DATASETFILENAME = datasetURLString;
         DATADIRECTORY = datadirectory;
+        logger.info("Set dataset of ANNSearcherFactor to: " + datasetURLString);
+        this.metric = metric;
 
     }
 
@@ -50,8 +55,8 @@ public class ANNSearcherFactory {
 
     private ANNSearcher getTreeSearcher(int maxLeafSize, int L, String type) throws FileNotFoundException {
 
-        if (!type.equals("RP") || !type.equals("RKD")) {
-            // Throw exception
+        if (!type.equals("RP") && !type.equals("RKD")) {
+            logger.error("Could not get Tree searcher: " + type + " is not a valid type.");
         }
 
         if (DATASETFILENAME == null) {
@@ -64,6 +69,7 @@ public class ANNSearcherFactory {
         File datastructure = getSuitableForest(maxLeafSize, L, type);
 
         if (datastructure == null) {
+            
             searchables = searchableForest(maxLeafSize, L, corpusMatrix, type);
             
             // Write searchables to disk
@@ -89,7 +95,8 @@ public class ANNSearcherFactory {
     }
 
     private List<Searchable> searchableForest(int maxLeafSize, int L, float[][] corpusMatrix, String type) {
-        
+        logger.info("Started constructing searchable  forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
+
         int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
@@ -103,6 +110,8 @@ public class ANNSearcherFactory {
             tree.fit(corpusMatrix);
             searchables.add(l, tree);
         }
+
+        logger.info("Finished constructing searchable forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
         return searchables;
     }
 
@@ -149,6 +158,7 @@ public class ANNSearcherFactory {
 
     private List<Searchable> searchableLSH(int K, float r, int L, float[][] corpusMatrix) {
         
+        logger.info("Started constructing LSH: K = " + K + ", r = " + r + ", L = " + L);
         int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
@@ -157,6 +167,7 @@ public class ANNSearcherFactory {
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
         }
+        logger.info("Finished constructing LSH " + "K = " + K + ", r = " + r + ", L = " + L);
         return searchables;
     }
 
@@ -208,7 +219,7 @@ public class ANNSearcherFactory {
     }   
 
     private List<Searchable> searchableC2LSH(int K, int minSize, int threshold, int L, float[][] corpusMatrix) {
-        
+        logger.info("Started constructing C2LSH: K = " + K + ", minSize = " + minSize + ", threshold = " + threshold + ", L = " +  L);
         int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
@@ -217,53 +228,31 @@ public class ANNSearcherFactory {
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
         }
+        logger.info("Finished constructing C2LSH: K = " + K + ", minSize = " + minSize + ", threshold = " + threshold + ", L = " +  L);
         return searchables;    
     }
     /* ----------- IO Methods ----------- */
 
     private void writeToDisk(Object object, String directory, String fileName) {
+        logger.info("Started writing " + fileName);
         try (ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(directory + fileName))) {
             myStream.writeObject(object);
             myStream.flush();
+            logger.info("Finished writing " + fileName);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("There was an error writing " + fileName + "to " + directory);
         }
     }
 
     private Object readFromDisk(String directory, File targetFile) {
-        System.out.println("Started loading");
-        try (ObjectInputStream myStream = new ObjectInputStream(
-                new FileInputStream(directory + targetFile.getName()))) {
+        logger.info("Started loading " + targetFile.getName());
+        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(directory + targetFile.getName()))) {
+            logger.info("Finished loading " + targetFile.getName());
             return myStream.readObject();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } finally {
-            System.out.println("Finished loading");
+        } catch (IOException|ClassNotFoundException e) {
+           logger.error("Error loading file: " + targetFile.getName());
+           return null;
         }
-        return null;
-    }
-
-    private float[][] getCorpusMatrix() {
-
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
-        return reader.readFloatMatrix("train");
-    }
-
-    private int[][] getSecondIndex(int k, float[][] corpusMatrix) {
-        File secondaryIndex = getSecondIndexFile(k);
-        int[][] secondaryIndexMatrix;
-
-        if (secondaryIndex == null) {
-            System.out.println("No suitable secondary index found. Constructing new index.");
-            // Calculate new ground truth
-            secondaryIndexMatrix = Utils.groundTruthParallel(corpusMatrix, k);
-            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-%2$d.ser", DATASET, k));
-        } else {
-            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
-        }
-        return secondaryIndexMatrix;
     }
 
     private File getSuitableForest(int maxLeafSize, int L, String type) {
@@ -282,7 +271,6 @@ public class ANNSearcherFactory {
             if (Integer.parseInt(match.group(2)) < L) {
                 continue;
             }
-            System.out.println("Loaded Tree from storage: " + file.getName());
             return file;
         }
 
@@ -305,7 +293,6 @@ public class ANNSearcherFactory {
             if (Integer.parseInt(match.group(3)) < L) {
                 continue;
             }
-            System.out.println("Loaded ClassicLSH from storage: " + file.getName());
             return file;
         }
         return null;
@@ -328,11 +315,28 @@ public class ANNSearcherFactory {
             if (Integer.parseInt(match.group(2)) < L) {
                 continue;
             }
-            System.out.println("Loaded C2LSH from storage: " + file.getName());
             return file;
         }
         return null;
     }
+
+    private int[][] getSecondIndex(int k, float[][] corpusMatrix) {
+        File secondaryIndex = getSecondIndexFile(k);
+        int[][] secondaryIndexMatrix;
+
+        if (secondaryIndex == null) {
+            
+            logger.info("No suitable secondary index of size " + k + " found. Constructing new index");
+            // Calculate new ground truth
+            secondaryIndexMatrix = Utils.groundTruth(corpusMatrix, k);
+            logger.info("Finished constructing new index");
+            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-groundtruth-%2$d.ser", DATASET, k));
+        } else {
+            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
+        }
+        return secondaryIndexMatrix;
+    }
+
 
     private File getSecondIndexFile(int k) {
 
@@ -355,6 +359,16 @@ public class ANNSearcherFactory {
         return null;
     }
 
+    private float[][] getCorpusMatrix() {
+        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
+        float[][] corpusMatrix = reader.readFloatMatrix("train");
+        if (metric.equals("angular")) {
+            corpusMatrix = Utils.normalizeCorpus(corpusMatrix);
+        }
+        return corpusMatrix;
+    }
+
+    
 
 
 }

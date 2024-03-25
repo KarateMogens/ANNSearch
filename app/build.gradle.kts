@@ -35,6 +35,11 @@ dependencies {
     // https://mvnrepository.com/artifact/de.ruedigermoeller/fst
     implementation("de.ruedigermoeller:fst:3.0.4-jdk17")
 
+    // log4j 2 
+    implementation("org.apache.logging.log4j:log4j-api:2.20.0")
+    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.random.*;
 import java.io.Serializable;
 
 
@@ -85,6 +84,9 @@ public class RPTree extends Tree implements Searchable, Serializable {
 
             // Recursively set right and left child
             depth++;
+            if (left.size() < 10 || right.size() < 10) {
+                System.out.println("bing");
+            }
             currentNode.setLeftChild(createTree(corpusMatrix, left, depth));
             currentNode.setRightChild(createTree(corpusMatrix, right, depth));
         }

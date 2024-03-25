@@ -2,7 +2,15 @@ package lsh;
 
 import java.lang.reflect.*;
 
+import java.util.Arrays;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
 public class MicroBenchmark {
+
+    private static final Logger logger = LogManager.getLogger(MicroBenchmark.class);
  
     Timer timer = new Timer();
 
@@ -28,7 +36,7 @@ public class MicroBenchmark {
                 Utils.Distance[] result = (Utils.Distance[]) method.invoke(searcher, parameters);
                 time[i] = (float) timer.check();
 
-                // Write results to results arrays
+                // Write partial results to results arrays
                 distances[i] = new float[result.length];
                 neighbors[i] = new int[result.length];
                 for (int j = 0; j < result.length; j++) {
@@ -36,10 +44,10 @@ public class MicroBenchmark {
                     neighbors[i][j] = result[j].getcIndex();
                 }
             }
+            logger.info("Benchmarking successful");
         } catch ( InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error("Benchmarking unsuccesful");
         } 
-        
         return new Results(distances, neighbors, time);
     }
 
