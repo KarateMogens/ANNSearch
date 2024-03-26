@@ -10,8 +10,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class Utils {
     
+    private static final Logger logger = LogManager.getLogger(Utils.class);
 
     public static float dot(float[] aVec, float[] bVec){
 
@@ -238,11 +242,11 @@ public class Utils {
         int corpusSize = corpusMatrix.length;
         int[][] secondaryIndex = new int[corpusSize][];
 
-        ExecutorService pool = new ForkJoinPool(1);
+        ExecutorService pool = new ForkJoinPool();
 		final int perTask = 1000;
         final int taskCount = corpusSize/perTask;
         Future<?>[] myFutures = new Future<?>[taskCount];
-
+        
 		for (int t = 0; t < taskCount; t++) {
 			final int from = perTask * t;
 			final int to = (t+1 == taskCount) ? corpusSize : perTask * (t + 1);
@@ -255,7 +259,7 @@ public class Utils {
                     }
 					
 				}
-                System.out.println("Done");
+                logger.trace("1000 neighbors calculated");
             });
 		}
 		try {

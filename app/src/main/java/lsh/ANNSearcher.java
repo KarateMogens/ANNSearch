@@ -83,9 +83,9 @@ public class ANNSearcher {
 
     public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
 
-        if (this.neighborsTable[0].length != k) {
-            throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured.");
-        }
+        // if (this.neighborsTable[0].length != k) {
+        //     throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured.");
+        // }
 
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
 
@@ -104,13 +104,13 @@ public class ANNSearcher {
 
     public Utils.Distance[] naturalClassifierSearchSetSize(float[] qVec, int k, int candidateSetSize) {
         
-        if (this.neighborsTable[0].length != k) {
-            throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured. Expected length " + k + ", table has length  " + this.neighborsTable[0].length + ".");
-        }
+        // if (this.neighborsTable[0].length != k) {
+        //     throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured. Expected length " + k + ", table has length  " + this.neighborsTable[0].length + ".");
+        // }
         
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
         
-        // If max candidatesetsize note reached, all elements are part of C
+        // If max candidatesetsize not reached, all elements are part of C
         if (corpusVotes.size() < candidateSetSize) {
             return Utils.bruteForceKNN(corpusMatrix, qVec, corpusVotes.keySet(), k);
         }

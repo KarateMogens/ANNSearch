@@ -1,9 +1,6 @@
 package lsh;
 
-// HDF5 Handling
-import ch.systemsx.cisd.hdf5.HDF5FactoryProvider;
-import ch.systemsx.cisd.hdf5.IHDF5Reader;
-
+import java.io.BufferedOutputStream;
 // Serialization and IO
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +13,7 @@ import java.io.FileInputStream;
 // Other imports
 import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.regex.*;
 
 import org.apache.logging.log4j.LogManager;
@@ -29,7 +27,8 @@ public class ANNSearcherFactory {
     private static String DATASETFILENAME;
     private static String DATASET;
     private static String DATADIRECTORY;
-    private String metric;
+    private static float[][] corpusMatrix;
+    private static String metric;
 
     private ANNSearcherFactory() {}
 
@@ -37,7 +36,8 @@ public class ANNSearcherFactory {
         return factory;
     }
 
-    public void setDataset(String datasetURLString, String metric) {
+    public void setDataset(String datasetURLString, String metric, float[][] corpusMatrix) {
+       
 
         String datasetName = datasetURLString.substring(datasetURLString.lastIndexOf("/") + 1, datasetURLString.lastIndexOf("."));
         String datadirectory = datasetURLString.substring(0, datasetURLString.lastIndexOf("/") + 1);
@@ -47,6 +47,7 @@ public class ANNSearcherFactory {
         DATADIRECTORY = datadirectory;
         logger.info("Set dataset of ANNSearcherFactor to: " + datasetURLString);
         this.metric = metric;
+        this.corpusMatrix = corpusMatrix;
 
     }
 
@@ -63,7 +64,7 @@ public class ANNSearcherFactory {
             throw new FileNotFoundException("No dataset specified.");
         }
 
-        float[][] corpusMatrix = getCorpusMatrix();
+        // float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
         File datastructure = getSuitableForest(maxLeafSize, L, type);
@@ -79,7 +80,7 @@ public class ANNSearcherFactory {
 
             searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
             if (searchables.size() > L) {
-                searchables = searchables.subList(0, L);
+                searchables = new LinkedList<>(searchables.subList(0, L));
             }
         }
 
@@ -109,6 +110,7 @@ public class ANNSearcherFactory {
             }
             tree.fit(corpusMatrix);
             searchables.add(l, tree);
+            logger.trace("Constructed tree " + (l+1) + "/" + L);
         }
 
         logger.info("Finished constructing searchable forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
@@ -123,7 +125,7 @@ public class ANNSearcherFactory {
             throw new FileNotFoundException("No dataset specified.");
         }
 
-        float[][] corpusMatrix = getCorpusMatrix();
+        // float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
         File datastructure = getSuitableLSH(K, r, L);
@@ -140,7 +142,7 @@ public class ANNSearcherFactory {
             // Read searchables from disk and reduce size
             searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
             if (searchables.size() > L) {
-                searchables = searchables.subList(0, L);
+                searchables = new LinkedList<>(searchables.subList(0, L));
             }
         }
 
@@ -166,6 +168,7 @@ public class ANNSearcherFactory {
             Searchable hashTable = new HashTable(d, K, r);
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
+            logger.trace("Constructed LSH " + (l+1) + "/" + L);
         }
         logger.info("Finished constructing LSH " + "K = " + K + ", r = " + r + ", L = " + L);
         return searchables;
@@ -180,7 +183,7 @@ public class ANNSearcherFactory {
             throw new FileNotFoundException("No dataset specified.");
         }
 
-        float[][] corpusMatrix = getCorpusMatrix();
+        // float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
         File datastructure = getSuitableC2LSH(K, L);
@@ -197,7 +200,7 @@ public class ANNSearcherFactory {
             // Read searchables from disk and reduce size
             searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
             if (searchables.size() > L) {
-                searchables = searchables.subList(0, L);
+                searchables = new LinkedList<>(searchables.subList(0, L));
             }
             for (Searchable searchable : searchables) {
                 C2LSH myC2LSH = (C2LSH) searchable;
@@ -227,6 +230,7 @@ public class ANNSearcherFactory {
             Searchable hashTable = new C2LSH(d, K, minSize, threshold);
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
+            logger.trace("Constructed C2LSH " + (l+1) + "/" + L);
         }
         logger.info("Finished constructing C2LSH: K = " + K + ", minSize = " + minSize + ", threshold = " + threshold + ", L = " +  L);
         return searchables;    
@@ -235,7 +239,7 @@ public class ANNSearcherFactory {
 
     private void writeToDisk(Object object, String directory, String fileName) {
         logger.info("Started writing " + fileName);
-        try (ObjectOutputStream myStream = new ObjectOutputStream(new FileOutputStream(directory + fileName))) {
+        try (ObjectOutputStream myStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(directory + fileName)))) {
             myStream.writeObject(object);
             myStream.flush();
             logger.info("Finished writing " + fileName);
@@ -247,8 +251,9 @@ public class ANNSearcherFactory {
     private Object readFromDisk(String directory, File targetFile) {
         logger.info("Started loading " + targetFile.getName());
         try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(directory + targetFile.getName()))) {
+            Object myObject = myStream.readObject();
             logger.info("Finished loading " + targetFile.getName());
-            return myStream.readObject();
+            return myObject;
         } catch (IOException|ClassNotFoundException e) {
            logger.error("Error loading file: " + targetFile.getName());
            return null;
@@ -328,7 +333,7 @@ public class ANNSearcherFactory {
             
             logger.info("No suitable secondary index of size " + k + " found. Constructing new index");
             // Calculate new ground truth
-            secondaryIndexMatrix = Utils.groundTruth(corpusMatrix, k);
+            secondaryIndexMatrix = Utils.groundTruthParallel(corpusMatrix, k);
             logger.info("Finished constructing new index");
             writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-groundtruth-%2$d.ser", DATASET, k));
         } else {
@@ -359,14 +364,14 @@ public class ANNSearcherFactory {
         return null;
     }
 
-    private float[][] getCorpusMatrix() {
-        IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
-        float[][] corpusMatrix = reader.readFloatMatrix("train");
-        if (metric.equals("angular")) {
-            corpusMatrix = Utils.normalizeCorpus(corpusMatrix);
-        }
-        return corpusMatrix;
-    }
+    // private float[][] getCorpusMatrix() {
+    //     IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
+    //     float[][] corpusMatrix = reader.readFloatMatrix("train");
+    //     if (metric.equals("angular")) {
+    //         corpusMatrix = Utils.normalizeCorpus(corpusMatrix);
+    //     }
+    //     return corpusMatrix;
+    // }
 
     
 

@@ -2,8 +2,6 @@ package lsh;
 
 import java.lang.reflect.*;
 
-import java.util.Arrays;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +44,7 @@ public class MicroBenchmark {
             }
             logger.info("Benchmarking successful");
         } catch ( InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+            e.printStackTrace();
             logger.error("Benchmarking unsuccesful");
         } 
         return new Results(distances, neighbors, time);

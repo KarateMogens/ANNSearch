@@ -54,6 +54,16 @@ application {
     mainClass.set("lsh.App")
 }
 
+sourceSets {
+    main {
+        resources {
+            exclude("**/*.ser")
+            exclude("**/*.hdf5")
+            exclude("**/*.properties")
+        }
+    }
+}
+
 tasks.jar {
     manifest.attributes["Main-Class"] = "lsh.App"
     val dependencies = configurations

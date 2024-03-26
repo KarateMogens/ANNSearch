@@ -3,14 +3,18 @@
  */
 package lsh;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import java.util.Arrays;
@@ -69,7 +73,7 @@ public class App {
 
     private void runBenchmarks() {
 
-        factory.setDataset(configProperties.getProperty("datasetPath"), getProperty("metric"));
+        factory.setDataset(configProperties.getProperty("datasetPath"), getProperty("metric"), train);
     
         MicroBenchmark benchmark = new MicroBenchmark();
 
@@ -109,8 +113,6 @@ public class App {
                         logger.error("Error calling search strategy: " + searchStrategy + ". Search strategy is not valid");
                         continue;
                 }
-                // Print benchmarking results to terminal
-                // TODO: Implement HDF5 writing from results.
                 System.out.println("\n" + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
                 printStats(results);
                 System.out.println("\n");
@@ -217,12 +219,26 @@ public class App {
     }
 
     public static void main(String[] args) { 
-        App myApp = new App("app/src/main/resources/config.properties");
-        //App myApp = new App(args[0]);
+        //App myApp = new App("app/src/main/resources/config.properties");
+
+        // // ---- Create .ser from groundtruth.hdf5 --------
+        // String FILEPATH = "app/src/main/resources/glove-200-angular/glove-200-angular-groundtruth-100.hdf5";
+        // IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
+        // int[][] neighbors = reader.readIntMatrix("neighbors");
+        // reader.close();
+
+        // try (ObjectOutputStream myStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("app/src/main/resources/glove-200-angular/glove-200-angular-groundtruth-100.ser")))) {
+        //     myStream.writeObject(neighbors);
+        //     myStream.flush();
+        // } catch (IOException e) {
+        // }
+
+        App myApp = new App(args[0]);
 
         
         myApp.runBenchmarks();
         logger.info("Terminating application");
+
 
 
         // ------------ ERROR FINDING IN GROUND TRUTH -----------------------------
