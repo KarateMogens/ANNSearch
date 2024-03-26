@@ -218,62 +218,13 @@ public class App {
         }
     }
 
-    public static void main(String[] args) { 
+    public static void main(String[] args) {
+
         //App myApp = new App("app/src/main/resources/config.properties");
-
-        // // ---- Create .ser from groundtruth.hdf5 --------
-        // String FILEPATH = "app/src/main/resources/glove-200-angular/glove-200-angular-groundtruth-100.hdf5";
-        // IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
-        // int[][] neighbors = reader.readIntMatrix("neighbors");
-        // reader.close();
-
-        // try (ObjectOutputStream myStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("app/src/main/resources/glove-200-angular/glove-200-angular-groundtruth-100.ser")))) {
-        //     myStream.writeObject(neighbors);
-        //     myStream.flush();
-        // } catch (IOException e) {
-        // }
-
         App myApp = new App(args[0]);
 
-        
         myApp.runBenchmarks();
         logger.info("Terminating application");
-
-
-
-        // ------------ ERROR FINDING IN GROUND TRUTH -----------------------------
-        // String FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5";
-        // FILEPATH = "src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth.h5";
-        // String FILENAME = "fashion-mnist-784-euclidean.hdf5";
-
-        // IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(FILEPATH));
-        // //float[][] test = reader.readFloatMatrix("test");
-        // int[][] neighbors = reader.readIntMatrix("neighbors");
-        // reader = HDF5FactoryProvider.get().openForReading(new File("src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean.hdf5"));
-        // float[][] train = reader.readFloatMatrix("train");
-        // reader.close();
-
-        // int[][] calculatedGroundTruth = new int[1][];
-
-        // try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream("src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth-10.ser"))) {
-        //     calculatedGroundTruth = (int[][]) myStream.readObject();
-        // } catch (IOException e) {
-        //     e.printStackTrace();
-        // } catch (ClassNotFoundException e) {
-        //     e.printStackTrace();
-        // }
-
-        // for (int i = 0; i < neighbors.length; i++) {
-        //     for (int j = 0; j < 10; j++) {
-        //         if (calculatedGroundTruth[i][j] != neighbors[i][j]) {
-        //             System.out.println("Row " + i +  " - error!");
-        //             System.out.println("Calculated: " + calculatedGroundTruth[i][j]);
-        //             System.out.println("faiss:" + neighbors[i][j]);
-        //             System.out.println(Utils.euclideanDistance(train[calculatedGroundTruth[i][j]], train[i]));
-        //             System.out.println(Utils.euclideanDistance(train[neighbors[i][j]], train[i]));
-        //     }
-        //     }
-        // }
 
         
     }

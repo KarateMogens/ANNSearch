@@ -13,6 +13,7 @@ import java.io.FileInputStream;
 // Other imports
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.*;
 
@@ -263,6 +264,9 @@ public class ANNSearcherFactory {
     private File getSuitableForest(int maxLeafSize, int L, String type) {
         File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
+        
+        // To iterate over alphabetically order, thus taking smallest suitable first.
+        Arrays.sort(files);
 
         Pattern pattern = Pattern.compile(type + "Tree_(\\d+)_(\\d+).ser");
 
@@ -286,6 +290,9 @@ public class ANNSearcherFactory {
         File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
 
+        // To iterate over alphabetically order, thus taking smallest suitable first.
+        Arrays.sort(files);
+
         Pattern pattern = Pattern.compile("LSH_(\\d+)_(\\d+,\\d+)_(\\d+).ser");
 
         for (File file : files) {
@@ -307,6 +314,9 @@ public class ANNSearcherFactory {
     private File getSuitableC2LSH(int K, int L) {
         File directory = new File(DATADIRECTORY);
         File[] files = directory.listFiles();
+
+        // To iterate over alphabetically order, thus taking smallest suitable first.
+        Arrays.sort(files);
 
         Pattern pattern = Pattern.compile("C2LSH_(\\d+)_(\\d+).ser");
 
@@ -363,17 +373,6 @@ public class ANNSearcherFactory {
 
         return null;
     }
-
-    // private float[][] getCorpusMatrix() {
-    //     IHDF5Reader reader = HDF5FactoryProvider.get().openForReading(new File(DATASETFILENAME));
-    //     float[][] corpusMatrix = reader.readFloatMatrix("train");
-    //     if (metric.equals("angular")) {
-    //         corpusMatrix = Utils.normalizeCorpus(corpusMatrix);
-    //     }
-    //     return corpusMatrix;
-    // }
-
-    
 
 
 }

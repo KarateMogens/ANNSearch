@@ -84,9 +84,6 @@ public class RPTree extends Tree implements Searchable, Serializable {
 
             // Recursively set right and left child
             depth++;
-            if (left.size() < 10 || right.size() < 10) {
-                System.out.println("bing");
-            }
             currentNode.setLeftChild(createTree(corpusMatrix, left, depth));
             currentNode.setRightChild(createTree(corpusMatrix, right, depth));
         }

@@ -140,6 +140,7 @@ public class ANNSearcher {
             throw new NeighborTablConfigurationException("No table of corpus point neighbors was found.");
         }
 
+        // Consider instantiating with larger initial capacity to avoid excessive rehashing
         HashMap<Integer, Float> corpusVotes = new HashMap<>();
 
         for (Searchable searchable : searchables) {
