@@ -86,13 +86,20 @@ public class App {
 
             String[] args = getArgs(datastructureArgList);
             ANNSearcher searcher = getSearcher(datastructure, args);
+            if (searcher == null) {
+                continue;
+            }
+
+            // //To focus profiling
+            // Scanner myScanner = new Scanner(System.in);
+            // logger.info("Ready for profiling");
+            // int myint = myScanner.nextInt();
 
             for (String searchStrategyArgsList : searchStrategyArgs) {
-                MicroBenchmark.Results results = null;
                 String[] strategyArgs = getArgs(searchStrategyArgsList);
-
-                // Call correct benchmarking method based on searchstrategy and search arguments
                 logger.info("Benchmarking: " + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
+
+                MicroBenchmark.Results results = null;
                 switch (searchStrategy) {
                     case "lookupSearch":
                         results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
@@ -102,6 +109,9 @@ public class App {
                         break;
                     case "naturalClassifierSearch":
                         results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
+                        break;
+                    case "naturalClassifierSearchRawCount":
+                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
                         break;
                     case "naturalClassifierSearchSetSize":
                         results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
@@ -115,7 +125,6 @@ public class App {
                 }
                 System.out.println("\n" + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
                 printStats(results);
-                System.out.println("\n");
                 writeResults(results, datastructure, args, searchStrategy, strategyArgs);
             }
         }
@@ -180,6 +189,7 @@ public class App {
     }
 
     private void writeResults(MicroBenchmark.Results results, String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
+        logger.trace("Writing benchmarking results to .hdf5");
         String identifier = createIdentifier(datastructure, datastructureArgs, searchStrategy, searchStrategyArgs);
         File resultsFile = createHDF5(results, identifier);
         IHDF5SimpleWriter writer = HDF5FactoryProvider.get().open(resultsFile);
@@ -220,8 +230,8 @@ public class App {
 
     public static void main(String[] args) {
 
-        //App myApp = new App("app/src/main/resources/config.properties");
-        App myApp = new App(args[0]);
+        App myApp = new App("app/src/main/resources/config.properties");
+        //App myApp = new App(args[0]);
 
         myApp.runBenchmarks();
         logger.info("Terminating application");

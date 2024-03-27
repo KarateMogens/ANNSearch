@@ -92,7 +92,7 @@ public class MicroBenchmark {
         public double check() {
             try {
                 long stop = System.nanoTime();
-                return (stop - start)/1e9;
+                return (stop - start)/1e9; // Returns time in seconds
             } finally {
                 start = 0; //Reset timer
             } 

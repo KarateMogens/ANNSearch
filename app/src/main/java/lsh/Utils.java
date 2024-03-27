@@ -98,6 +98,7 @@ public class Utils {
 
     public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
         
+        // Return -1,-1 for rest if less than k candidates are found
         if (candidateSet.size() < k) {
             // 
             Distance[] kNeighbors = new Distance[k];

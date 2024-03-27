@@ -2,7 +2,9 @@ package lsh;
 
 import java.util.List;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.HashMap;
 import java.util.Collection;
 
@@ -44,24 +46,25 @@ public class ANNSearcher {
 
     public Utils.Distance[] lookupSearch(float[] qVec, int k) {
 
-
         Set<Integer> candidateSet = new HashSet<>();
         
         for (Searchable searchable : searchables) {
+            // get partitionset of q for each 
             Collection<Integer> searchResult = searchable.search(qVec);
             if (searchResult == null) {
                 continue;
             }
-
+            // add all points to candidate set
             candidateSet.addAll(searchResult);
         }
-
+        
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }
 
     public Utils.Distance[] votingSearch(float[] qVec, int k, int threshold) {
-    
-        Set<Integer> candidateSet = new HashSet<>();
+        
+        // Initialize candidate set and frequency counter
+        List<Integer> candidateSet = new LinkedList<>();
         int[] frequency = new int[corpusMatrix.length];
 
         for (Searchable searchable : searchables) {
@@ -69,7 +72,7 @@ public class ANNSearcher {
             if (searchResult == null) {
                 continue;
             }
-
+            // If an index reaches threshold, add to C
             for (Integer cIndex : searchResult) {
                 if (++frequency[cIndex] == threshold) {
                     candidateSet.add(cIndex);
@@ -83,18 +86,42 @@ public class ANNSearcher {
 
     public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
 
-        // if (this.neighborsTable[0].length != k) {
-        //     throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured.");
-        // }
-
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
 
         //Iterate over all elements, adding only candidates to C with adequate vote average
-        Set<Integer> candidateSet = new HashSet<>();
-        for (Integer cIndex : corpusVotes.keySet()) {
-            float voteValue = corpusVotes.get(cIndex);
-            if (voteValue/(float) searchables.size() >= threshold) {
-                candidateSet.add(cIndex);
+        List<Integer> candidateSet = new LinkedList<>();
+        int L = searchables.size();
+        for (Entry<Integer,Float> entry : corpusVotes.entrySet()) {
+            if (entry.getValue() / L >= threshold) {
+                candidateSet.add(entry.getKey());
+            }
+        }
+
+        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+
+    }
+
+    public Utils.Distance[] naturalClassifierSearchRawCount(float[] qVec, int k, int threshold) {
+        
+        // Initialize candidate set and frequency counter
+        List<Integer> candidateSet = new LinkedList<>();
+        int[] votes = new int[corpusMatrix.length];
+        
+        for (Searchable searchable : searchables) {
+
+            Collection<Integer> searchResult = searchable.search(qVec);
+            if (searchResult == null) {
+                continue;
+            }
+
+            for (Integer cIndex : searchResult) {
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
+                    // If an index reaches threshold, add to C
+                    if (++votes[neighborOfcIndex] == threshold) {
+                        candidateSet.add(neighborOfcIndex);
+                    }
+                }
             }
         }
 
@@ -103,11 +130,7 @@ public class ANNSearcher {
     }
 
     public Utils.Distance[] naturalClassifierSearchSetSize(float[] qVec, int k, int candidateSetSize) {
-        
-        // if (this.neighborsTable[0].length != k) {
-        //     throw new NeighborTablConfigurationException("Neighbor Table dimensions incorrectly configured. Expected length " + k + ", table has length  " + this.neighborsTable[0].length + ".");
-        // }
-        
+      
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
         
         // If max candidatesetsize not reached, all elements are part of C
@@ -118,13 +141,13 @@ public class ANNSearcher {
         // Convert all vote entries into an array which is compatible with quickSelect.
         Vote[] votes = new Vote[corpusVotes.size()];
         int ctr = 0;
-        for (Integer cIndex : corpusVotes.keySet()) {
-            votes[ctr++] = new Vote(cIndex, corpusVotes.get(cIndex));
+        for (Entry<Integer,Float> entry : corpusVotes.entrySet()) {
+            votes[ctr++] = new Vote(entry.getKey(), entry.getValue());
         }
-        int location = Utils.quickSelect(votes, 0, corpusVotes.size()-1, candidateSetSize);
-        
+
         // Pick only top candidates
-        Set<Integer> candidateSet = new HashSet<>();
+        int location = Utils.quickSelect(votes, 0, corpusVotes.size()-1, candidateSetSize);
+        List<Integer> candidateSet = new LinkedList<>();
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
         }
@@ -133,15 +156,11 @@ public class ANNSearcher {
 
     }
 
-    // Helper method for Natural Classifier Search
+    // Helper method for naturalClassifierSearch and naturalClassifierSearchSetSize
     private HashMap<Integer, Float> getVoteMap(float[] qVec) {
 
-        if (this.neighborsTable == null) {
-            throw new NeighborTablConfigurationException("No table of corpus point neighbors was found.");
-        }
-
         // Consider instantiating with larger initial capacity to avoid excessive rehashing
-        HashMap<Integer, Float> corpusVotes = new HashMap<>();
+        HashMap<Integer, Float> corpusVotes = new HashMap<>(corpusMatrix.length/100);
 
         for (Searchable searchable : searchables) {
             Collection<Integer> searchResult = searchable.search(qVec);
@@ -150,7 +169,7 @@ public class ANNSearcher {
             }
 
             // Account for varying partition size
-            float voteWeight = 1/ (float) searchResult.size();
+            float voteWeight = (float) 1 / searchResult.size();
             for (Integer cIndex : searchResult) {
                 // Count votes of neighbors in partition
                 for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
@@ -165,7 +184,7 @@ public class ANNSearcher {
 
         return corpusVotes;
     }
-
+   
     public Utils.Distance[] bruteForceSearch(float[] qVec, int k) {
         
         return Utils.bruteForceKNN(corpusMatrix, qVec, k);
