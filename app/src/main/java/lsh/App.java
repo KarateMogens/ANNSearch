@@ -189,7 +189,7 @@ public class App {
     }
 
     private void writeResults(MicroBenchmark.Results results, String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
-        logger.trace("Writing benchmarking results to .hdf5");
+        logger.trace("Writing benchmarking results to .hdf5");;
         String identifier = createIdentifier(datastructure, datastructureArgs, searchStrategy, searchStrategyArgs);
         File resultsFile = createHDF5(results, identifier);
         IHDF5SimpleWriter writer = HDF5FactoryProvider.get().open(resultsFile);
@@ -230,6 +230,7 @@ public class App {
 
     public static void main(String[] args) {
 
+        //Switch for jar compilation or running through IDE
         App myApp = new App("app/src/main/resources/config.properties");
         //App myApp = new App(args[0]);
 
