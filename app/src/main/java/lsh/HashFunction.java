@@ -35,9 +35,7 @@ public class HashFunction implements Serializable {
         float dotProd = Utils.dot(xVec, aVec);
 
         // Calculate the hash-value
-
-        // Can we omit Math.floor? Probab
-        return (int) Math.floor((dotProd + b) / r);
+        return (int) ((dotProd + b) / r);
 
     }
 

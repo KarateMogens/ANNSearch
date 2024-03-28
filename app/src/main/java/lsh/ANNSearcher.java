@@ -12,7 +12,7 @@ public class ANNSearcher {
 
     private List<Searchable> searchables;
     private float[][] corpusMatrix;
-    private int[][] neighborsTable;
+    private Integer[][] neighborsTable;
 
     public ANNSearcher(List<Searchable> searchables, float[][] corpusMatrix) {
         this.searchables = searchables;
@@ -26,20 +26,15 @@ public class ANNSearcher {
 
     public void setSecondaryIndex(int[][] neighborsTable, int k) {
         
-        if (neighborsTable[0].length == k) {
-            this.neighborsTable = neighborsTable;
-            return;
-        }
+        this.neighborsTable = new Integer[neighborsTable.length][];
 
         for (int i = 0; i < neighborsTable.length; i++) {
-            int[] temp = new int[k];
+            Integer[] temp = new Integer[k];
             for (int j = 0; j < k; j++) {
                 temp[j] = neighborsTable[i][j];
             }
-            neighborsTable[i] = temp;
+            this.neighborsTable[i] = temp;
         }
-
-        this.neighborsTable = neighborsTable;
     }
 
     /* ----------- SEARCH STRATEGIES ----------- */
@@ -169,7 +164,7 @@ public class ANNSearcher {
             }
 
             // Account for varying partition size
-            float voteWeight = (float) 1 / searchResult.size();
+            Float voteWeight = (float) 1 / searchResult.size();
             for (Integer cIndex : searchResult) {
                 // Count votes of neighbors in partition
                 for (Integer neighborOfcIndex : neighborsTable[cIndex]) {

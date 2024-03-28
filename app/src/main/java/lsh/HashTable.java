@@ -11,16 +11,18 @@ import java.util.Random;
 
 public class HashTable implements Searchable, Serializable {
 
-    protected List<HashFunction> hashFunctions;
-    protected Map<Long, List<Integer>> hashIndex;
+    private HashFunction[] hashFunctions;
+    private Map<Long, List<Integer>> hashIndex;
+    private int K;
     private long P;
     private long[] listHashing;
 
     public HashTable(int d, int K, double r) {
+        this.K = K;
         hashIndex = new HashMap<>();
-        hashFunctions = new LinkedList<>();
+        hashFunctions = new HashFunction[K];
         for (int i = 0; i < K; i++) {
-            hashFunctions.add(new HashFunction(d, r));
+            hashFunctions[i] = new HashFunction(d, r);
         }
     }
 
@@ -29,6 +31,7 @@ public class HashTable implements Searchable, Serializable {
         initP(corpusMatrix.length);
         initList();
 
+        // Hash each individual corpus point using all hashfunctions
         for (int cIndex = 0; cIndex < corpusMatrix.length; cIndex++) {
             float[] cVec = corpusMatrix[cIndex];
 
@@ -37,6 +40,7 @@ public class HashTable implements Searchable, Serializable {
             // Add index to partition
             List<Integer> partition = hashIndex.get(bin);
             if (partition == null) {
+                // Create new set of points if partition isn't stored yet
                 partition = new LinkedList<>();
                 partition.add(cIndex);
                 hashIndex.put(bin, partition);
@@ -47,19 +51,20 @@ public class HashTable implements Searchable, Serializable {
     }
 
     private void initP(long corpusSize) {
-        corpusSize = corpusSize * corpusSize;
-        while (!Utils.isPrime(corpusSize)) {
-            corpusSize++;
+        // Initialize the value P for reference hashing
+        // where P > n^2 and P is prime
+        P = corpusSize * corpusSize;
+        while (!Utils.isPrime(P)) {
+            P++;
         }
-        P = corpusSize;
     }
 
     private void initList() {
         Random randomGen = new Random();
 
-        listHashing = new long[hashFunctions.size()];
-        for (int i = 0; i < listHashing.length; i++) {
-            listHashing[i] = (long) (randomGen.nextFloat()*P);
+        listHashing = new long[K];
+        for (int i = 0; i < K; i++) {
+            listHashing[i] = (long) (randomGen.nextFloat()*(P-1));
         }
     }   
 
@@ -68,17 +73,19 @@ public class HashTable implements Searchable, Serializable {
         return hashIndex.get(bin);
     }
 
-    protected long getBin(float[] vec) {
+    private long getBin(float[] vec) {
 
-        int[] hashValues = new int[hashFunctions.size()];
-        for (int i = 0; i < hashFunctions.size(); i++) {
-            hashValues[i] = hashFunctions.get(i).hash(vec);
+        // Find the hashValue of hashing vec with each individual hash function {1,...,k}
+        int[] hashValues = new int[K];
+        for (int i = 0; i < K; i++) {
+            hashValues[i] = hashFunctions[i].hash(vec);
         }
 
-        return hashList(hashValues);
+        return referenceHash(hashValues);
     }
 
-    private long hashList(int[] list) {
+    private long referenceHash(int[] list) {
+        // Hash indidivual hash values into a single long value
         long listHashValue = 0;
         for (int i = 0; i < list.length; i++) {
             listHashValue += (list[i] * listHashing[i]);

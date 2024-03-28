@@ -25,6 +25,7 @@ public class C2LSH implements Searchable, Serializable {
         compoundHashTable = new ArrayList<>(K);
         for (int i = 0; i < K; i++) {
             // Always set r to 1.
+            // This causes way too large buckets Angular distance case (max distance is 2)
             hashFunctions.add(i, new HashFunction(d, 1));
         }
         this.minSize = minSize;
@@ -63,15 +64,13 @@ public class C2LSH implements Searchable, Serializable {
     }
 
     public Collection<Integer> search(float[] qVec) {
-        if (minSize <= 0 || threshold <= 0 || corpusMatrixSize <= 0) {
-            throw new IllegalArgumentException("minSize or threshold not specified");
-        }
 
         // Vector to count frequency of corpusPoints
         int[] frequency = new int[corpusMatrixSize];
         PointerSet[] hashFunctionPointers = new PointerSet[compoundHashTable.size()];
-        HashSet<Integer> candidateSet = new HashSet<>();
-
+        List<Integer> candidateSet = new LinkedList<>();
+        
+        //oldR is not used in first iteration
         int oldR = 0;
         int R = 1;
 
@@ -130,7 +129,8 @@ public class C2LSH implements Searchable, Serializable {
         }
 
         public void increaseWidth(int R) {
-            pStart = (bid/R)*R;
+            // Shift pStart left on the real line, pEnd right on the real line.
+            pStart = (int) Math.floor( (double) bid/R)*R;
             pEnd = pStart + R-1;
         }
 

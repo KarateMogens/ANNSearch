@@ -231,8 +231,8 @@ public class App {
     public static void main(String[] args) {
 
         //Switch for jar compilation or running through IDE
-        App myApp = new App("app/src/main/resources/config.properties");
-        //App myApp = new App(args[0]);
+        //App myApp = new App("app/src/main/resources/config.properties");
+        App myApp = new App(args[0]);
 
         myApp.runBenchmarks();
         logger.info("Terminating application");
