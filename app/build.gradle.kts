@@ -29,11 +29,9 @@ dependencies {
     // https://mvnrepository.com/artifact/cisd/jhdf5
     implementation("cisd:jhdf5:19.04.1")
 
-    //FST - Fast Serialization
-    // https://mvnrepository.com/artifact/de.ruedigermoeller/fst
-    // Documentation: https://javadoc.io/doc/de.ruedigermoeller/fst/2.57/index.html
-    // https://mvnrepository.com/artifact/de.ruedigermoeller/fst
-    implementation("de.ruedigermoeller:fst:3.0.4-jdk17")
+    // https://mvnrepository.com/artifact/com.esotericsoftware/kryo
+    implementation("com.esotericsoftware:kryo:5.6.0")
+
 
     // log4j 2 
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")

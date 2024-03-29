@@ -20,11 +20,17 @@ import java.util.regex.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+
 public class ANNSearcherFactory {
 
     private static final Logger logger = LogManager.getLogger(ANNSearcherFactory.class);
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
-   
+    private static final Kryo kryo = new Kryo();
+        
     private static String DATASETFILENAME;
     private static String DATASET;
     private static String DATADIRECTORY;
@@ -38,7 +44,12 @@ public class ANNSearcherFactory {
     }
 
     public void setDataset(String datasetURLString, String metric, float[][] corpusMatrix) {
-       
+        kryo.register(C2LSH.class, new JavaSerializer());
+        kryo.register(HashTable.class, new JavaSerializer());
+        kryo.register(Tree.class, new JavaSerializer());
+        kryo.register(RPTree.class, new JavaSerializer());
+        kryo.register(java.util.ArrayList.class, new JavaSerializer());
+        kryo.register(int[][].class, new JavaSerializer());
 
         String datasetName = datasetURLString.substring(datasetURLString.lastIndexOf("/") + 1, datasetURLString.lastIndexOf("."));
         String datadirectory = datasetURLString.substring(0, datasetURLString.lastIndexOf("/") + 1);
@@ -240,8 +251,11 @@ public class ANNSearcherFactory {
 
     private void writeToDisk(Object object, String directory, String fileName) {
         logger.info("Started writing " + fileName);
-        try (ObjectOutputStream myStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(directory + fileName)))) {
-            myStream.writeObject(object);
+        Kryo myKryo = new Kryo();
+        myKryo.register(C2LSH.class, new JavaSerializer());
+        myKryo.register(java.util.ArrayList.class, new JavaSerializer());
+        try (FileOutputStream myStream = new FileOutputStream(directory + fileName); Output myOutput = new Output(myStream)) {
+            myKryo.writeClassAndObject(myOutput, object);
             myStream.flush();
             logger.info("Finished writing " + fileName);
         } catch (IOException e) {
@@ -251,11 +265,11 @@ public class ANNSearcherFactory {
 
     private Object readFromDisk(String directory, File targetFile) {
         logger.info("Started loading " + targetFile.getName());
-        try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream(directory + targetFile.getName()))) {
-            Object myObject = myStream.readObject();
+        try (FileInputStream myStream = new FileInputStream(directory + targetFile.getName()); Input myInput = new Input(myStream)) {
+            Object myObject = kryo.readClassAndObject(myInput);
             logger.info("Finished loading " + targetFile.getName());
             return myObject;
-        } catch (IOException|ClassNotFoundException e) {
+        } catch (IOException e) {
            logger.error("Error loading file: " + targetFile.getName());
            return null;
         }

@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -23,6 +24,10 @@ import ch.systemsx.cisd.hdf5.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 
 public class App {
@@ -231,12 +236,30 @@ public class App {
     public static void main(String[] args) {
 
         //Switch for jar compilation or running through IDE
-        //App myApp = new App("app/src/main/resources/config.properties");
-        App myApp = new App(args[0]);
+        App myApp = new App("app/src/main/resources/config.properties");
+        //App myApp = new App(args[0]);
 
         myApp.runBenchmarks();
         logger.info("Terminating application");
 
+        // int[][] neighborsTable = null;
+        // Object myObject = null;
+        // try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream("app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth-100.ser"))) {
+        //     myObject = myStream.readObject();
+        // } catch (IOException|ClassNotFoundException e) {
+           
+        // }
+        
+        // neighborsTable = (int[][]) myObject;
+        // Kryo myKryo = new Kryo();
+        // myKryo.register(int[][].class, new JavaSerializer());
+        // try {
+        //     FileOutputStream outputStream = new FileOutputStream("app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth-100-kryo.ser");
+        //     Output myOutput = new Output(outputStream);
+        //     myKryo.writeClassAndObject(myOutput, neighborsTable);
+        // } catch (Exception e) {
+
+        // }
         
     }
 }
