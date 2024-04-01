@@ -98,25 +98,14 @@ public class ANNSearcher {
 
     public Utils.Distance[] naturalClassifierSearchRawCount(float[] qVec, int k, int threshold) {
         
-        // Initialize candidate set and frequency counter
-        List<Integer> candidateSet = new LinkedList<>();
-        int[] votes = new int[corpusMatrix.length];
+       
+        HashMap<Integer, Integer> corpusVotes = getRawCountVoteMap(qVec);
         
-        for (Searchable searchable : searchables) {
-
-            Collection<Integer> searchResult = searchable.search(qVec);
-            if (searchResult == null) {
-                continue;
-            }
-
-            for (Integer cIndex : searchResult) {
-                // Count votes of neighbors in partition
-                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
-                    // If an index reaches threshold, add to C
-                    if (++votes[neighborOfcIndex] == threshold) {
-                        candidateSet.add(neighborOfcIndex);
-                    }
-                }
+        List<Integer> candidateSet = new LinkedList<>();
+        int L = searchables.size();
+        for (Entry<Integer,Integer> entry : corpusVotes.entrySet()) {
+            if (entry.getValue() >= threshold) {
+                candidateSet.add(entry.getKey());
             }
         }
 
@@ -172,6 +161,31 @@ public class ANNSearcher {
                         corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) + voteWeight);
                     } else {
                         corpusVotes.put(neighborOfcIndex, voteWeight);
+                    }
+                }
+            }
+        }
+
+        return corpusVotes;
+    }
+
+    private HashMap<Integer, Integer> getRawCountVoteMap(float[] qVec) {
+
+        HashMap<Integer, Integer> corpusVotes = new HashMap<>(corpusMatrix.length/100);
+
+        for (Searchable searchable : searchables) {
+            Collection<Integer> searchResult = searchable.search(qVec);
+            if (searchResult == null) {
+                continue;
+            }
+
+            for (Integer cIndex : searchResult) {
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
+                    if (corpusVotes.containsKey(neighborOfcIndex)) {
+                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) +1);
+                    } else {
+                        corpusVotes.put(neighborOfcIndex, 1);
                     }
                 }
             }
