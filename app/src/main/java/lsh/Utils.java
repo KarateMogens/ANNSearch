@@ -23,24 +23,24 @@ public class Utils {
             throw new IllegalArgumentException("Vectors of unequal length passed");
         }
 
-        float dotProduct = 0.0f;
+        double dotProduct = 0.0f;
         
         for (int i = 0; i < aVec.length; i++) {
             dotProduct += aVec[i] * bVec[i];
         }
 
-        return dotProduct;
+        return (float) dotProduct;
     }
 
     public static float dot(float[] aVec, float[] bVec, List<Integer> dimensions){
 
-        float dotProduct = 0.0f;
+        double dotProduct = 0.0f;
         
         for (Integer componentIndex : dimensions) {
             dotProduct += aVec[componentIndex] * bVec[componentIndex];
         }
 
-        return dotProduct;
+        return (float) dotProduct;
     }
 
     public static float euclideanDistance(float[] aVec, float[] bVec) {
@@ -49,7 +49,7 @@ public class Utils {
             throw new IllegalArgumentException("Vectors of unequal length passed");
         }
 
-        float squaredDistance = 0.0f;
+        double squaredDistance = 0.0f;
         for (int i = 0; i < bVec.length; i++) {
             squaredDistance += Math.pow(aVec[i]-bVec[i], 2);
         }
@@ -63,11 +63,22 @@ public class Utils {
             throw new IllegalArgumentException("Vectors of unequal length passed");
         }
 
-        float squaredDistance = 0.0f;
+        double squaredDistance = 0.0f;
         for (int i = 0; i < bVec.length; i++) {
             squaredDistance += Math.pow(aVec[i]-bVec[i], 2);
         }
-        return squaredDistance;
+        return (float) squaredDistance;
+
+    }
+
+    public static float angularDistance(float[] aVec, float[] bVec) {
+
+        // Calculates cosine distance
+        if (aVec.length != bVec.length) {
+            throw new IllegalArgumentException("Vectors of unequal length passed");
+        }
+
+        return 1 - dot(aVec, bVec)/(magnitude(aVec)*magnitude(bVec));
 
     }
 
@@ -96,35 +107,25 @@ public class Utils {
         return corpusCopy;
     }
 
-    public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
-        
-        // Return -1,-1 for rest if less than k candidates are found
-        if (candidateSet.size() < k) {
-            // 
-            Distance[] kNeighbors = new Distance[k];
-            for (int i = 0; i < k; i++) {
-                kNeighbors[i] = new Distance(-1, -1);
-            }
-            return kNeighbors;
-        }
-        
-        PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
+    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, Collection<Integer> candidateSet, int k) {
 
+        PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
         for (Integer index : candidateSet) {
             float distance = euclideanSquareDistance(qVec, corpusMatrix[index]);
             maxHeap.add(new Distance(index, distance));
         }
 
-        Distance[] kNeighbors = new Distance[k];
-        
-        for (int i = 0; i < k; i++) {
-            kNeighbors[i] = maxHeap.poll();
+        // Return k neighbors if more than k candidates, else return sorted candidates
+        int min = Math.min(k, candidateSet.size());
+        int[] kNeighbors = new int[min];
+        for (int i = 0; i < min; i++) {
+            kNeighbors[i] = maxHeap.poll().getcIndex();
         }
         
         return kNeighbors;
     }
 
-    public static Distance[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
+    public static int[] bruteForceKNN(float[][] corpusMatrix, float[] qVec, int k) {
 
         PriorityQueue<Distance> maxHeap = new PriorityQueue<>();
 
@@ -133,10 +134,10 @@ public class Utils {
             maxHeap.add(new Distance(index, distance));
         }
 
-        Distance[] kNeighbors = new Distance[k];
+        int[] kNeighbors = new int[k];
         
         for (int i = 0; i < k; i++) {
-            kNeighbors[i] = maxHeap.poll();
+            kNeighbors[i] = maxHeap.poll().getcIndex();
         }
         
         return kNeighbors;
@@ -229,11 +230,7 @@ public class Utils {
         int corpusSize = corpusMatrix.length;
         int[][] secondaryIndex = new int[corpusSize][];         
         for (int i = 0; i < corpusSize; i++) {
-            secondaryIndex[i] = new int[k];
-            Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
-            for (int j = 0; j < result.length; j++) {
-                secondaryIndex[i][j] = result[j].cIndex;
-            }
+            secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
         }
         return secondaryIndex;
     }
@@ -253,12 +250,7 @@ public class Utils {
 			final int to = (t+1 == taskCount) ? corpusSize : perTask * (t + 1);
 			myFutures[t] = pool.submit(() -> {
 				for (int i = from; i < to; i++){
-                    secondaryIndex[i] = new int[k];
-                    Distance[] result = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
-                    for (int j = 0; j < result.length; j++) {
-                        secondaryIndex[i][j] = result[j].cIndex;
-                    }
-					
+                    secondaryIndex[i] = Utils.bruteForceKNN(corpusMatrix, corpusMatrix[i], k);
 				}
                 logger.trace("1000 neighbors calculated");
             });
@@ -310,22 +302,28 @@ public class Utils {
             sum += array[i];
         }
         return (float) (sum / size);
-
     }
 
-    public static float calculateSplit(float[] array) {
+    public static float median(float[] array) {
         Arrays.sort(array);
-        int size = array.length;
         float median;
+        int size = array.length;
         if (size % 2 == 0) {
             median = ((float) array[size/2] + (float) array[size/2 - 1])/2;
         } else {
             median = (float) array[size/2];
         }
+        return median;
+    }
 
+
+
+    public static float calculateSplit(float[] array) {
+        
+        float median = Utils.median(array);
         // In case the median creates a highly skewed split
-        // use mean.
-        if (median == array[0] || median == array[size-1]) {
+        // use mean
+        if (median == array[0] || median == array[array.length-1]) {
             return Utils.mean(array);
         }
 

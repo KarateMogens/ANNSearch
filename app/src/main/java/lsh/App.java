@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.stream.Collectors;
+
 
 import java.util.Arrays;
 
@@ -25,9 +25,8 @@ import ch.systemsx.cisd.hdf5.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import java.text.SimpleDateFormat;  
+import java.util.Date;  
 
 
 public class App {
@@ -40,6 +39,7 @@ public class App {
     float[][] test;
     int[][] neighbors;
     float[][] train;
+    String metric;
 
     public App(String configFilePath) {
 
@@ -68,7 +68,7 @@ public class App {
         train = reader.readFloatMatrix("train");
         reader.close();
 
-        String metric = getProperty("metric");
+        metric = getProperty("metric");
 
         if (metric.equals("angular")) {
             train = Utils.normalizeCorpus(train);
@@ -78,7 +78,7 @@ public class App {
 
     private void runBenchmarks() {
 
-        factory.setDataset(configProperties.getProperty("datasetPath"), getProperty("metric"), train);
+        factory.setDataset(configProperties.getProperty("datasetPath"), metric, train);
     
         MicroBenchmark benchmark = new MicroBenchmark();
 
@@ -107,22 +107,22 @@ public class App {
                 MicroBenchmark.Results results = null;
                 switch (searchStrategy) {
                     case "lookupSearch":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]));
                         break;
                     case "votingSearch":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
                         break;
                     case "naturalClassifierSearch":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]), Float.parseFloat(strategyArgs[1]));
                         break;
                     case "naturalClassifierSearchRawCount":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
                         break;
                     case "naturalClassifierSearchSetSize":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]), Integer.parseInt(strategyArgs[1]));
                         break;
                     case "bruteForceSearch":
-                        results = benchmark.benchmark(searcher, test, searchStrategy, Integer.parseInt(strategyArgs[0]));
+                        results = benchmark.benchmark(searcher, test, train, searchStrategy, metric, Integer.parseInt(strategyArgs[0]));
                         break;
                     default:
                         logger.error("Error calling search strategy: " + searchStrategy + ". Search strategy is not valid");
@@ -169,39 +169,51 @@ public class App {
     }
 
     private void printStats(MicroBenchmark.Results results) {
-        results.statistics();
-        System.out.println("Mean: " + results.getMeanQueryTime());
-        System.out.println("Std. dev: " + results.getStandardDeviation());
-        System.out.println("Max: " + results.getMaxTime());
-        System.out.println("Min: " + results.getMinTime());
-        
-        //Calculate recall
-        int[][] neighborsFound = results.getNeighbors();
-        float[] recalls = new float[neighborsFound.length];
-        for (int i = 0; i < neighborsFound.length; i++) {
-            float recall = 0;
-            List<Integer> trueNeighbors = Arrays.stream(neighbors[i])     // IntStream
-                         .boxed()             // Stream<Integer>
-                         .collect(Collectors.toList());
-            for (int j = 0; j < neighborsFound[i].length; j++) {
-                if (trueNeighbors.contains(neighborsFound[i][j])) {
-                    recall += 1.0f;
-                }
-            }
-            recalls[i] = recall / neighborsFound[i].length;
-        }
-        System.out.println("Mean recall: " + Utils.mean(recalls));
+        // These statistics are only meant for guiding parameter configuration
+        // the mean recall is calculated differently (based on distance) in ANN benchmarks
+        // and may give differing results
+        results.calculateStatistics(neighbors);
+        System.out.println("Mean seconds/query: \t\t" + results.getMeanQueryTime());
+        System.out.println("Std. dev:  \t\t" + results.getStandardDeviation());
+        System.out.println("Max:  \t\t" + results.getMaxTime());
+        System.out.println("Min:  \t\t" + results.getMinTime());
+        System.out.println("Mean queries/second: \t\t" + results.getQueriesPrSecond());
+        System.out.println("Mean C-size:  \t\t" + results.getMeanCandidateSetSize());
+        System.out.println("Median C-size:  \t\t" + results.getMedianCandidateSetSize());
+        System.out.println("Neighbors found:  \t\t" + results.getMeanNeighborsFound());
+        System.out.println("Mean recall:  \t\t" + results.getMeanRecall());
     }
 
     private void writeResults(MicroBenchmark.Results results, String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
         logger.trace("Writing benchmarking results to .hdf5");;
         String identifier = createIdentifier(datastructure, datastructureArgs, searchStrategy, searchStrategyArgs);
         File resultsFile = createHDF5(results, identifier);
-        IHDF5SimpleWriter writer = HDF5FactoryProvider.get().open(resultsFile);
+        IHDF5Writer writer = HDF5FactoryProvider.get().open(resultsFile);
+        // Write results
         writer.writeIntMatrix("neighbors", results.getNeighbors());
         writer.writeFloatMatrix("distances", results.getDistances());
         writer.writeFloatArray("times", results.getQueryTimes());
-        
+        // Write algorithm name
+        writer.string().setAttr("/", "algo", datastructure + searchStrategy);
+        writer.string().setAttr("/", "name", datastructure + searchStrategy);
+        // Write dataset name
+        String dataset = configProperties.getProperty("datasetPath");
+        dataset = dataset.substring(dataset.lastIndexOf("/") + 1, dataset.lastIndexOf("."));
+        writer.string().setAttr("/", "dataset", dataset);
+        // Write distance metric
+        writer.string().setAttr("/", "metric", metric);
+        // Batchmode - always false
+        writer.bool().setAttr("/", "batch_mode", false);
+        // Write avg. neighbors found
+        writer.float32().setAttr("/", "candidates", results.getMeanNeighborsFound());
+        // Write timestamp
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");  
+        Date date = new Date();  
+        writer.string().setAttr("/", "timestamp", formatter.format(date));
+        // Number of neighbors to return (k)
+        writer.int32().setAttr("/", "count", results.getCount());
+        // Mean query time (best mean query time if multiple runs are used)
+        writer.float32().setAttr("/", "best_search_time", results.getMeanQueryTime());
     }
 
     private String createIdentifier(String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
@@ -236,8 +248,8 @@ public class App {
     public static void main(String[] args) {
 
         //Switch for jar compilation or running through IDE
-        //App myApp = new App("app/src/main/resources/config.properties");
-        App myApp = new App(args[0]);
+        App myApp = new App("app/src/main/resources/config.properties");
+        //App myApp = new App(args[0]);
 
         myApp.runBenchmarks();
         logger.info("Terminating application");

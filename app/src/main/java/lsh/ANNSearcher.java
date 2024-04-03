@@ -39,7 +39,7 @@ public class ANNSearcher {
 
     /* ----------- SEARCH STRATEGIES ----------- */
 
-    public Utils.Distance[] lookupSearch(float[] qVec, int k) {
+    public int[] lookupSearch(int[] CSize, float[] qVec, int k) {
 
         Set<Integer> candidateSet = new HashSet<>();
         
@@ -53,10 +53,11 @@ public class ANNSearcher {
             candidateSet.addAll(searchResult);
         }
         
+        CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }
 
-    public Utils.Distance[] votingSearch(float[] qVec, int k, int threshold) {
+    public int[] votingSearch(int[] CSize, float[] qVec, int k, int threshold) {
         
         // Initialize candidate set and frequency counter
         List<Integer> candidateSet = new LinkedList<>();
@@ -75,11 +76,11 @@ public class ANNSearcher {
 
             }
         }
-
+        CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
     }
 
-    public Utils.Distance[] naturalClassifierSearch(float[] qVec, int k, float threshold) {
+    public int[] naturalClassifierSearch(int CSize[], float[] qVec, int k, float threshold) {
 
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
 
@@ -92,11 +93,12 @@ public class ANNSearcher {
             }
         }
 
+        CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
 
-    public Utils.Distance[] naturalClassifierSearchRawCount(float[] qVec, int k, int threshold) {
+    public int[] naturalClassifierSearchRawCount(int[] CSize, float[] qVec, int k, int threshold) {
         
        
         HashMap<Integer, Integer> corpusVotes = getRawCountVoteMap(qVec);
@@ -108,12 +110,12 @@ public class ANNSearcher {
                 candidateSet.add(entry.getKey());
             }
         }
-
+        CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
 
-    public Utils.Distance[] naturalClassifierSearchSetSize(float[] qVec, int k, int candidateSetSize) {
+    public int[] naturalClassifierSearchSetSize(int[] CSize, float[] qVec, int k, int candidateSetSize) {
       
         HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
         
@@ -135,7 +137,7 @@ public class ANNSearcher {
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
         }
-        
+        CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
@@ -194,8 +196,9 @@ public class ANNSearcher {
         return corpusVotes;
     }
    
-    public Utils.Distance[] bruteForceSearch(float[] qVec, int k) {
+    public int[] bruteForceSearch(int[] CSize, float[] qVec, int k) {
         
+        CSize[0] = corpusMatrix.length;
         return Utils.bruteForceKNN(corpusMatrix, qVec, k);
         
     }
