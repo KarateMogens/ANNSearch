@@ -41,12 +41,6 @@ dependencies {
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(20))
-    }
-}
-
 application {
     // Define the main class for the application.
     mainClass.set("lsh.App")

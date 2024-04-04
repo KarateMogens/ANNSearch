@@ -1,14 +1,14 @@
 package lsh;
 
-import java.io.BufferedOutputStream;
 // Serialization and IO
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.io.FileInputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 
 // Other imports
 import java.util.List;
@@ -30,12 +30,15 @@ public class ANNSearcherFactory {
     private static final Logger logger = LogManager.getLogger(ANNSearcherFactory.class);
     private static final ANNSearcherFactory factory = new ANNSearcherFactory();
     private static final Kryo kryo = new Kryo();
-        
+
     private static String DATASETFILENAME;
     private static String DATASET;
-    private static String DATADIRECTORY;
     private static float[][] corpusMatrix;
-    private static String metric;
+
+    // FOR JAR BUILD
+    // private static String DATASTRUCTUREDIRECTORY = "./datastructures";
+    // FOR RUNNING IN IDE
+    private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
 
     private ANNSearcherFactory() {}
 
@@ -43,7 +46,7 @@ public class ANNSearcherFactory {
         return factory;
     }
 
-    public void setDataset(String datasetURLString, String metric, float[][] corpusMatrix) {
+    public void setDataset(String datasetFile, String metric, float[][] corpusMatrixInput) {
         kryo.register(C2LSH.class, new JavaSerializer());
         kryo.register(HashTable.class, new JavaSerializer());
         kryo.register(Tree.class, new JavaSerializer());
@@ -51,15 +54,19 @@ public class ANNSearcherFactory {
         kryo.register(java.util.ArrayList.class, new JavaSerializer());
         kryo.register(int[][].class, new JavaSerializer());
 
-        String datasetName = datasetURLString.substring(datasetURLString.lastIndexOf("/") + 1, datasetURLString.lastIndexOf("."));
-        String datadirectory = datasetURLString.substring(0, datasetURLString.lastIndexOf("/") + 1);
+        DATASETFILENAME = datasetFile;
+        DATASET = datasetFile.substring(0, DATASETFILENAME.lastIndexOf("."));
+        
+        DATASTRUCTUREDIRECTORY = DATASTRUCTUREDIRECTORY + "/" + DATASET + "/";
+        Path datastructureFileDirectory = Paths.get(DATASTRUCTUREDIRECTORY);
+        try {
+            Files.createDirectories(datastructureFileDirectory);
+        } catch (IOException e) {
+            logger.error("Error creating directory: " + datastructureFileDirectory);
+        }   
+        logger.info("Set dataset of ANNSearcherFactor to: " + DATASETFILENAME);
 
-        DATASET = datasetName;
-        DATASETFILENAME = datasetURLString;
-        DATADIRECTORY = datadirectory;
-        logger.info("Set dataset of ANNSearcherFactor to: " + datasetURLString);
-        this.metric = metric;
-        this.corpusMatrix = corpusMatrix;
+        corpusMatrix = corpusMatrixInput;
 
     }
 
@@ -87,10 +94,10 @@ public class ANNSearcherFactory {
             
             // Write searchables to disk
             String fileName = String.format(type + "Tree_%1$d_%2$d.ser", maxLeafSize, L);
-            writeToDisk(searchables, DATADIRECTORY, fileName);
+            writeToDisk(searchables, DATASTRUCTUREDIRECTORY, fileName);
         } else {
 
-            searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
+            searchables = (List<Searchable>) readFromDisk(DATASTRUCTUREDIRECTORY, datastructure);
             if (searchables.size() > L) {
                 searchables = new LinkedList<>(searchables.subList(0, L));
             }
@@ -102,15 +109,13 @@ public class ANNSearcherFactory {
     public ANNSearcher getNCTreeSearcher(int maxLeafSize, int L, String type, int k) throws FileNotFoundException {
 
         ANNSearcher mySearcher = getTreeSearcher(maxLeafSize, L, type);
-        int[][] secondaryIndex = getSecondIndex(k, mySearcher.getCorpusMatrix());
+        int[][] secondaryIndex = getSecondIndex(k);
         mySearcher.setSecondaryIndex(secondaryIndex, k);
         return mySearcher;
     }
 
     private List<Searchable> searchableForest(int maxLeafSize, int L, float[][] corpusMatrix, String type) {
         logger.info("Started constructing searchable  forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
-
-        int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
         for (int l = 0; l < L; l++) {
@@ -148,11 +153,11 @@ public class ANNSearcherFactory {
 
             // Write searchables to disk
             String fileName = String.format("LSH_%1$d_%2$f_%3$d.ser", K, r, L);
-            writeToDisk(searchables, DATADIRECTORY, fileName);
+            writeToDisk(searchables, DATASTRUCTUREDIRECTORY, fileName);
 
         } else {
             // Read searchables from disk and reduce size
-            searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
+            searchables = (List<Searchable>) readFromDisk(DATASTRUCTUREDIRECTORY, datastructure);
             if (searchables.size() > L) {
                 searchables = new LinkedList<>(searchables.subList(0, L));
             }
@@ -164,7 +169,7 @@ public class ANNSearcherFactory {
     public ANNSearcher getNCLSHSearcher(int K, float r, int L, int k) throws FileNotFoundException {
 
         ANNSearcher LSHSearcher = getLSHSearcher(K, r, L);
-        int[][] secondaryIndexMatrix = getSecondIndex(k, LSHSearcher.getCorpusMatrix());
+        int[][] secondaryIndexMatrix = getSecondIndex(k);
         LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
 
         return LSHSearcher;
@@ -206,11 +211,11 @@ public class ANNSearcherFactory {
 
             // Write searchables to disk
             String fileName = String.format("C2LSH_%1$d_%2$d.ser", K, L);
-            writeToDisk(searchables, DATADIRECTORY, fileName);
+            writeToDisk(searchables, DATASTRUCTUREDIRECTORY, fileName);
 
         } else {
             // Read searchables from disk and reduce size
-            searchables = (List<Searchable>) readFromDisk(DATADIRECTORY, datastructure);
+            searchables = (List<Searchable>) readFromDisk(DATASTRUCTUREDIRECTORY, datastructure);
             if (searchables.size() > L) {
                 searchables = new LinkedList<>(searchables.subList(0, L));
             }
@@ -227,7 +232,7 @@ public class ANNSearcherFactory {
     public ANNSearcher getNCC2LSHSearcher(int K, int minSize, int threshold, int L, int k) throws FileNotFoundException {
 
         ANNSearcher LSHSearcher = getC2LSHSearcher(K, minSize, threshold, L);
-        int[][] secondaryIndexMatrix = getSecondIndex(k, LSHSearcher.getCorpusMatrix());
+        int[][] secondaryIndexMatrix = getSecondIndex(k);
         LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
 
         return LSHSearcher;
@@ -276,7 +281,7 @@ public class ANNSearcherFactory {
     }
 
     private File getSuitableForest(int maxLeafSize, int L, String type) {
-        File directory = new File(DATADIRECTORY);
+        File directory = new File(DATASTRUCTUREDIRECTORY);
         File[] files = directory.listFiles();
         
         // To iterate over alphabetically order, thus taking smallest suitable first.
@@ -301,7 +306,7 @@ public class ANNSearcherFactory {
     }
 
     private File getSuitableLSH(int K, float r, int L) {
-        File directory = new File(DATADIRECTORY);
+        File directory = new File(DATASTRUCTUREDIRECTORY);
         File[] files = directory.listFiles();
 
         // To iterate over alphabetically order, thus taking smallest suitable first.
@@ -326,7 +331,7 @@ public class ANNSearcherFactory {
     }
 
     private File getSuitableC2LSH(int K, int L) {
-        File directory = new File(DATADIRECTORY);
+        File directory = new File(DATASTRUCTUREDIRECTORY);
         File[] files = directory.listFiles();
 
         // To iterate over alphabetically order, thus taking smallest suitable first.
@@ -349,7 +354,7 @@ public class ANNSearcherFactory {
         return null;
     }
 
-    private int[][] getSecondIndex(int k, float[][] corpusMatrix) {
+    private int[][] getSecondIndex(int k) {
         File secondaryIndex = getSecondIndexFile(k);
         int[][] secondaryIndexMatrix;
 
@@ -359,9 +364,9 @@ public class ANNSearcherFactory {
             // Calculate new ground truth
             secondaryIndexMatrix = Utils.groundTruthParallel(corpusMatrix, k);
             logger.info("Finished constructing new index");
-            writeToDisk(secondaryIndexMatrix, DATADIRECTORY, String.format("%1$s-groundtruth-%2$d.ser", DATASET, k));
+            writeToDisk(secondaryIndexMatrix, DATASTRUCTUREDIRECTORY, String.format("%1$s-groundtruth-%2$d.ser", DATASET, k));
         } else {
-            secondaryIndexMatrix = (int[][]) readFromDisk(DATADIRECTORY, secondaryIndex);
+            secondaryIndexMatrix = (int[][]) readFromDisk(DATASTRUCTUREDIRECTORY, secondaryIndex);
         }
         return secondaryIndexMatrix;
     }
@@ -369,7 +374,7 @@ public class ANNSearcherFactory {
 
     private File getSecondIndexFile(int k) {
 
-        File directory = new File(DATADIRECTORY);
+        File directory = new File(DATASTRUCTUREDIRECTORY);
         File[] files = directory.listFiles();
 
         if (files == null) {

@@ -70,8 +70,8 @@ public class MicroBenchmark {
                     }
                 }
                 // Calculate average # of neighbors found
-                neighborsFound = neighborsFound/testSet.length; 
             }
+            neighborsFound = neighborsFound/testSet.length; 
             logger.info("Benchmarking successful");
         } catch ( InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             e.printStackTrace();

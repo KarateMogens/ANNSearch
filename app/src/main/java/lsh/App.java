@@ -3,16 +3,14 @@
  */
 package lsh;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
@@ -40,6 +38,13 @@ public class App {
     int[][] neighbors;
     float[][] train;
     String metric;
+    // FOR JAR BUILD
+    // private static final String DATADIRECTORY = "./data";
+    // private static final String RESULTSDIRECTORY = "./results";
+
+    // FOR RUNNING IN IDE
+    private static final String DATADIRECTORY = "app/src/main/resources/data";
+    private static final String RESULTSDIRECTORY = "app/src/main/resources//results";
 
     public App(String configFilePath) {
 
@@ -55,7 +60,8 @@ public class App {
         }
 
         // Check if corpus file exists
-        String datasetFilePath = getProperty("datasetPath");
+        String datasetFile = getProperty("dataset");
+        String datasetFilePath = DATADIRECTORY + "/" + datasetFile;
         if (!Utils.fileExists(datasetFilePath)) {
             logger.error("No dataset file located at the specified directory: " + datasetFilePath);
             return;
@@ -67,19 +73,21 @@ public class App {
         neighbors = reader.readIntMatrix("neighbors");
         train = reader.readFloatMatrix("train");
         reader.close();
+        logger.info("Succesfully loaded dataset: " + datasetFilePath);
 
+        // Normalize to unit sphere in case of angular distance
         metric = getProperty("metric");
-
         if (metric.equals("angular")) {
             train = Utils.normalizeCorpus(train);
             test = Utils.normalizeCorpus(test);
+            logger.info("Normalized dataset to unit length");
         }
+
+        factory.setDataset(configProperties.getProperty("dataset"), metric, train);
     }
 
     private void runBenchmarks() {
 
-        factory.setDataset(configProperties.getProperty("datasetPath"), metric, train);
-    
         MicroBenchmark benchmark = new MicroBenchmark();
 
         String datastructure = getProperty("datastructure");
@@ -195,15 +203,19 @@ public class App {
         writer.writeFloatArray("times", results.getQueryTimes());
         // Write algorithm name
         writer.string().setAttr("/", "algo", datastructure + searchStrategy);
-        writer.string().setAttr("/", "name", datastructure + searchStrategy);
+        writer.string().setAttr("/", "name", datastructure + Arrays.toString(datastructureArgs) + searchStrategy + Arrays.toString(searchStrategyArgs));
         // Write dataset name
-        String dataset = configProperties.getProperty("datasetPath");
-        dataset = dataset.substring(dataset.lastIndexOf("/") + 1, dataset.lastIndexOf("."));
+        String dataset = getProperty("dataset");
+        dataset = dataset.substring(0, dataset.lastIndexOf("."));
         writer.string().setAttr("/", "dataset", dataset);
         // Write distance metric
         writer.string().setAttr("/", "metric", metric);
         // Batchmode - always false
         writer.bool().setAttr("/", "batch_mode", false);
+        // Number of runs
+        writer.int32().setAttr("/", "run_count", 1);
+        // Build time - NOT SUPPORTED
+        writer.float32().setAttr("/", "build_time", 1.0f);
         // Write avg. neighbors found
         writer.float32().setAttr("/", "candidates", results.getMeanNeighborsFound());
         // Write timestamp
@@ -233,45 +245,29 @@ public class App {
     }
 
     private File createHDF5(MicroBenchmark.Results results, String identifier) {
-        String datasetFilePath = getProperty("datasetPath");
-        datasetFilePath = datasetFilePath.substring(0, datasetFilePath.lastIndexOf("/") + 1);
-        File resultsFile = new File(datasetFilePath + identifier + ".hdf5");
-        try {   
+        try {
+            String datasetName = getProperty("dataset").substring(0, getProperty("dataset").lastIndexOf("."));
+            String resultpath = RESULTSDIRECTORY + "/" + datasetName + "/" + results.getCount();
+            Path datastructureFileDirectory = Paths.get(resultpath);
+            Files.createDirectories(datastructureFileDirectory);
+            File resultsFile = new File(resultpath + "/" + identifier + ".hdf5" );
             resultsFile.createNewFile();
             return resultsFile;
-        } catch (IOException exception) {
-            logger.error("There was an error creating a results file for the benchmark");
+        } catch (IOException e) {
+            logger.error("Error creating a results file");
             return null;
-        }
+        }  
     }
 
     public static void main(String[] args) {
-
-        //Switch for jar compilation or running through IDE
+        //FOR JAR BUILD
+        // App myApp = new App(args[0]);
+        //FOR RUNNING IN IDE
         App myApp = new App("app/src/main/resources/config.properties");
-        //App myApp = new App(args[0]);
+        
 
         myApp.runBenchmarks();
         logger.info("Terminating application");
 
-        // int[][] neighborsTable = null;
-        // Object myObject = null;
-        // try (ObjectInputStream myStream = new ObjectInputStream(new FileInputStream("app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth-100.ser"))) {
-        //     myObject = myStream.readObject();
-        // } catch (IOException|ClassNotFoundException e) {
-           
-        // }
-        
-        // neighborsTable = (int[][]) myObject;
-        // Kryo myKryo = new Kryo();
-        // myKryo.register(int[][].class, new JavaSerializer());
-        // try {
-        //     FileOutputStream outputStream = new FileOutputStream("app/src/main/resources/fashion-mnist-784-euclidean/fashion-mnist-784-euclidean-groundtruth-100-kryo.ser");
-        //     Output myOutput = new Output(outputStream);
-        //     myKryo.writeClassAndObject(myOutput, neighborsTable);
-        // } catch (Exception e) {
-
-        // }
-        
     }
 }

@@ -3,7 +3,6 @@ package lsh;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +118,7 @@ public class C2LSH implements Searchable, Serializable {
         int bid;
         int pRight;
         int pEnd;
+        int sideCount;
 
         public PointerSet(int bid) {
             this.pStart = bid;
@@ -126,6 +126,7 @@ public class C2LSH implements Searchable, Serializable {
             this.bid = bid;
             this.pRight = bid;
             this.pEnd = bid;
+            sideCount = 0;
         }
 
         public void increaseWidth(int R) {
@@ -135,10 +136,19 @@ public class C2LSH implements Searchable, Serializable {
         }
 
         public int next() {
-            if (pLeft != pStart) {
-                return --pLeft;
-            } else if (pRight != pEnd) {
-                return ++pRight;
+            // Keep track of which side to expand first (if possible)
+            if (sideCount++ % 2 == 0) {
+                if (pLeft != pStart) {
+                    return --pLeft;
+                } else if (pRight != pEnd) {
+                    return ++pRight;
+                }
+            } else {
+                if (pRight != pEnd) {
+                    return ++pRight;
+                } else if (pLeft != pStart) {
+                    return --pLeft;
+                } 
             }
             // Used in the first iteration
             return bid;

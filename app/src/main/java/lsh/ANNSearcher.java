@@ -185,7 +185,7 @@ public class ANNSearcher {
                 // Count votes of neighbors in partition
                 for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
                     if (corpusVotes.containsKey(neighborOfcIndex)) {
-                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) +1);
+                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) + 1);
                     } else {
                         corpusVotes.put(neighborOfcIndex, 1);
                     }

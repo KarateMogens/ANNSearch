@@ -22,9 +22,18 @@
 *.zip
 *.tar.gz
 *.rar
-app/src/main/resources/gist-960-euclidean/
-app/src/main/resources/glove-200-angular/
-app/src/main/resources/sift-128-euclidean/
+app/src/main/resources/data/glove-200-angular.hdf5
+app/src/main/resources/data/sift-128-euclidean.hdf5
+app/src/main/resources/data/gist-960-euclidean.hdf5
+app/src/main/resources/datastructures/glove-200-angular
+app/src/main/resources/datastructures/sift-128-euclidean
+app/src/main/resources/datastructures/gist-960-euclidean
+app/src/main/resources/datastructures/fashion-mnist-784-euclidean/RPTree*
+app/src/main/resources/datastructures/fashion-mnist-784-euclidean/RKDTree*
+app/src/main/resources/datastructures/fashion-mnist-784-euclidean/LSH*
+app/src/main/resources/datastructures/fashion-mnist-784-euclidean/C2LSH*
+app/src/main/resources/results
+
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
