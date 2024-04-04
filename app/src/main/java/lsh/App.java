@@ -3,6 +3,7 @@
  */
 package lsh;
 
+// IO
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,21 +12,19 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Scanner;
-
-
-import java.util.Arrays;
-
 import ch.systemsx.cisd.hdf5.*;
 
+// Logging
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// Other
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Arrays;
 import java.text.SimpleDateFormat;  
 import java.util.Date;  
-
 
 public class App {
 
@@ -181,19 +180,19 @@ public class App {
         // the mean recall is calculated differently (based on distance) in ANN benchmarks
         // and may give differing results
         results.calculateStatistics(neighbors);
-        System.out.println("Mean seconds/query: \t\t" + results.getMeanQueryTime());
-        System.out.println("Std. dev:  \t\t" + results.getStandardDeviation());
-        System.out.println("Max:  \t\t" + results.getMaxTime());
-        System.out.println("Min:  \t\t" + results.getMinTime());
-        System.out.println("Mean queries/second: \t\t" + results.getQueriesPrSecond());
-        System.out.println("Mean C-size:  \t\t" + results.getMeanCandidateSetSize());
-        System.out.println("Median C-size:  \t\t" + results.getMedianCandidateSetSize());
-        System.out.println("Neighbors found:  \t\t" + results.getMeanNeighborsFound());
-        System.out.println("Mean recall:  \t\t" + results.getMeanRecall());
+        System.out.printf("%-25s %s%n", "Mean seconds/query:", results.getMeanQueryTime());
+        System.out.printf("%-25s %s%n", "Std. dev query time:", results.getStandardDeviation());
+        System.out.printf("%-25s %s%n", "Max query time:", results.getMaxTime());
+        System.out.printf("%-25s %s%n", "Min query time:", results.getMinTime());
+        System.out.printf("%-25s %s%n", "Mean queries/second:", results.getQueriesPrSecond());
+        System.out.printf("%-25s %s%n", "Mean C-size:", results.getMeanCandidateSetSize());
+        System.out.printf("%-25s %s%n", "Median C-size:", results.getMedianCandidateSetSize());
+        System.out.printf("%-25s %s%n", "Mean # neighbors found:", results.getMeanNeighborsFound());
+        System.out.printf("%-25s %s%n", "Mean recall:", results.getMeanRecall());
     }
 
     private void writeResults(MicroBenchmark.Results results, String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {
-        logger.trace("Writing benchmarking results to .hdf5");;
+        logger.trace("Writing benchmarking results to .hdf5");
         String identifier = createIdentifier(datastructure, datastructureArgs, searchStrategy, searchStrategyArgs);
         File resultsFile = createHDF5(results, identifier);
         IHDF5Writer writer = HDF5FactoryProvider.get().open(resultsFile);
@@ -226,6 +225,8 @@ public class App {
         writer.int32().setAttr("/", "count", results.getCount());
         // Mean query time (best mean query time if multiple runs are used)
         writer.float32().setAttr("/", "best_search_time", results.getMeanQueryTime());
+
+        writer.close();
     }
 
     private String createIdentifier(String datastructure, String[] datastructureArgs, String searchStrategy, String[] searchStrategyArgs) {

@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 public class RPTree extends Tree implements Searchable, Serializable {
 
-    private SparseVector[] allRandomVectors;
+    private List<SparseVector> allRandomVectors;
 
     public RPTree (int maxLeafSize) {
         super(maxLeafSize);
@@ -22,16 +22,8 @@ public class RPTree extends Tree implements Searchable, Serializable {
         for (int i = 0; i < corpusMatrix.length; i++) {
             allPoints.add(i, i);
         }
-
-        // Create a random vector for each level of tree
-        int dimensions = corpusMatrix[0].length;
-        // To get base 2 log we take loge(allpoints.size())/loge(2)
-        int maxDepth = (int) Math.ceil(Math.log(allPoints.size())/Math.log(2)) +1;
-        allRandomVectors = new SparseVector[maxDepth];
-        for (int i = 0; i < maxDepth; i++) {
-            allRandomVectors[i] = randomVector(dimensions);
-        }
-
+        allRandomVectors = new ArrayList<>();
+        
         super.setRoot(createTree(corpusMatrix, allPoints, 0));
     }
 
@@ -41,7 +33,7 @@ public class RPTree extends Tree implements Searchable, Serializable {
 
         while (!currentNode.getIsLeaf()) {
             float splitValue = currentNode.getSplitValue();
-            SparseVector splittingVector = allRandomVectors[currentNode.getSplitIndex()];
+            SparseVector splittingVector = allRandomVectors.get(currentNode.getSplitIndex());
 
             float projFactor = Utils.dot(qVec, splittingVector.getVector(), splittingVector.getNonZeroComponents());
             if (projFactor < splitValue) {
@@ -93,8 +85,12 @@ public class RPTree extends Tree implements Searchable, Serializable {
 
     private ProjectionFactor[] allProjectionFactors(float[][] corpusMatrix, List<Integer> cIndices, int depth) {
         ProjectionFactor[] allProjectionFactors = new ProjectionFactor[cIndices.size()];
+        // Create new randomvector for current depth, if it has not been created
+        if (allRandomVectors.size() == depth) {
+            allRandomVectors.add(randomVector(corpusMatrix[0].length));
+        }
         // Pick randomvector of current depth
-        SparseVector currentSparseVector = allRandomVectors[depth];
+        SparseVector currentSparseVector = allRandomVectors.get(depth);
         int ctr = 0;
         for (Integer cIndex : cIndices) {
             float projFactor = Utils.dot(corpusMatrix[cIndex], currentSparseVector.getVector(), currentSparseVector.getNonZeroComponents());

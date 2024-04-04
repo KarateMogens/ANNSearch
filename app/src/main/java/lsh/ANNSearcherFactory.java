@@ -1,6 +1,6 @@
 package lsh;
 
-// Serialization and IO
+// IO
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
@@ -10,6 +10,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 
+// Serialization
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+
 // Other imports
 import java.util.List;
 import java.util.ArrayList;
@@ -17,13 +23,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.*;
 
+// Logging
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 public class ANNSearcherFactory {
 
@@ -43,16 +45,18 @@ public class ANNSearcherFactory {
     private ANNSearcherFactory() {}
 
     public static ANNSearcherFactory getInstance() {
+        kryo.register(C2LSH.class, new JavaSerializer());
+        kryo.register(RKDTree.class, new JavaSerializer());
+        kryo.register(RPTree.class, new JavaSerializer());
+        kryo.register(HashTable.class, new JavaSerializer());
+        kryo.register(Tree.class, new JavaSerializer());
+        kryo.register(java.util.ArrayList.class, new JavaSerializer());
+        kryo.register(int[][].class, new JavaSerializer());
         return factory;
     }
 
     public void setDataset(String datasetFile, String metric, float[][] corpusMatrixInput) {
-        kryo.register(C2LSH.class, new JavaSerializer());
-        kryo.register(HashTable.class, new JavaSerializer());
-        kryo.register(Tree.class, new JavaSerializer());
-        kryo.register(RPTree.class, new JavaSerializer());
-        kryo.register(java.util.ArrayList.class, new JavaSerializer());
-        kryo.register(int[][].class, new JavaSerializer());
+        
 
         DATASETFILENAME = datasetFile;
         DATASET = datasetFile.substring(0, DATASETFILENAME.lastIndexOf("."));
@@ -256,11 +260,10 @@ public class ANNSearcherFactory {
 
     private void writeToDisk(Object object, String directory, String fileName) {
         logger.info("Started writing " + fileName);
-        Kryo myKryo = new Kryo();
-        myKryo.register(C2LSH.class, new JavaSerializer());
-        myKryo.register(java.util.ArrayList.class, new JavaSerializer());
+        // kryo.register(C2LSH.class, new JavaSerializer());
+        // kryo.register(java.util.ArrayList.class, new JavaSerializer());
         try (FileOutputStream myStream = new FileOutputStream(directory + fileName); Output myOutput = new Output(myStream)) {
-            myKryo.writeClassAndObject(myOutput, object);
+            kryo.writeClassAndObject(myOutput, object);
             myStream.flush();
             logger.info("Finished writing " + fileName);
         } catch (IOException e) {
