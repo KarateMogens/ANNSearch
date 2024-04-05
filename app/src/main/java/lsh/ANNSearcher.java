@@ -58,31 +58,50 @@ public class ANNSearcher {
     }
 
     public int[] votingSearch(int[] CSize, float[] qVec, int k, int threshold) {
-        
+
         // Initialize candidate set and frequency counter
         List<Integer> candidateSet = new LinkedList<>();
-        int[] frequency = new int[corpusMatrix.length];
+
+        // Should probably use a votemap instead of frequency array
+        HashMap<Integer,Integer> voteMap = getVoteMap(qVec);
+
+        for (Entry<Integer,Integer> entry : voteMap.entrySet()) {
+            if (entry.getValue() >= threshold) {
+                candidateSet.add(entry.getKey());
+            }
+        }
+
+        CSize[0] = candidateSet.size();
+        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+    }
+
+    private HashMap<Integer, Integer> getVoteMap(float[] qVec) {
+
+        // Consider instantiating with larger initial capacity to avoid excessive rehashing
+        HashMap<Integer, Integer> corpusVotes = new HashMap<>(corpusMatrix.length/100);
 
         for (Searchable searchable : searchables) {
             Collection<Integer> searchResult = searchable.search(qVec);
             if (searchResult == null) {
                 continue;
             }
-            // If an index reaches threshold, add to C
-            for (Integer cIndex : searchResult) {
-                if (++frequency[cIndex] == threshold) {
-                    candidateSet.add(cIndex);
-                };
 
+            for (Integer cIndex : searchResult) {
+                // Count votes of partition elements
+                if (corpusVotes.containsKey(cIndex)) {
+                    corpusVotes.replace(cIndex, corpusVotes.get(cIndex) + 1);
+                } else {
+                    corpusVotes.put(cIndex, 1);
+                }
             }
         }
-        CSize[0] = candidateSet.size();
-        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+
+        return corpusVotes;
     }
 
     public int[] naturalClassifierSearch(int CSize[], float[] qVec, int k, float threshold) {
 
-        HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
+        HashMap<Integer, Float> corpusVotes = getNCVoteMap(qVec);
 
         //Iterate over all elements, adding only candidates to C with adequate vote average
         List<Integer> candidateSet = new LinkedList<>();
@@ -104,7 +123,6 @@ public class ANNSearcher {
         HashMap<Integer, Integer> corpusVotes = getRawCountVoteMap(qVec);
         
         List<Integer> candidateSet = new LinkedList<>();
-        int L = searchables.size();
         for (Entry<Integer,Integer> entry : corpusVotes.entrySet()) {
             if (entry.getValue() >= threshold) {
                 candidateSet.add(entry.getKey());
@@ -117,7 +135,7 @@ public class ANNSearcher {
 
     public int[] naturalClassifierSearchSetSize(int[] CSize, float[] qVec, int k, int candidateSetSize) {
       
-        HashMap<Integer, Float> corpusVotes = getVoteMap(qVec);
+        HashMap<Integer, Float> corpusVotes = getNCVoteMap(qVec);
         
         // If max candidatesetsize not reached, all elements are part of C
         if (corpusVotes.size() < candidateSetSize) {
@@ -143,7 +161,7 @@ public class ANNSearcher {
     }
 
     // Helper method for naturalClassifierSearch and naturalClassifierSearchSetSize
-    private HashMap<Integer, Float> getVoteMap(float[] qVec) {
+    private HashMap<Integer, Float> getNCVoteMap(float[] qVec) {
 
         // Consider instantiating with larger initial capacity to avoid excessive rehashing
         HashMap<Integer, Float> corpusVotes = new HashMap<>(corpusMatrix.length/100);
