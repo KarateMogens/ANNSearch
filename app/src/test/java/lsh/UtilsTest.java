@@ -1,10 +1,12 @@
 package lsh;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.*;
+
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 
 public class UtilsTest {
 
@@ -55,6 +57,29 @@ public class UtilsTest {
     }
 
     @Test
+    public void testAngularDistance() {
+        float[] aVec1 = {1.0f, 2.0f, 3.0f};
+        float[] bVec1 = {4.0f, 5.0f, 6.0f};
+        
+        float result1 = Utils.angularDistance(aVec1, bVec1);
+        
+        // Expected angular distance: 1 - cosine similarity
+        float expectedAngularDistance = 0.025368f;
+
+        assertEquals(expectedAngularDistance, result1, 0.0001f);
+
+        float[] aVec2 = {0.0f, 1.0f};
+        float[] bVec2 = {1.0f, 0.0f};
+
+        float result2 = Utils.angularDistance(aVec2, bVec2);
+
+        // Expected angular distance: 1 - cosine similarity
+        expectedAngularDistance = 1.000000f;
+
+        assertEquals(expectedAngularDistance, result2, 0.0001f);
+    }
+
+    @Test
     public void dotProductTest() {
 
         float[] aVec1 = {1, 2, 3};
@@ -72,6 +97,221 @@ public class UtilsTest {
         float expectedDistance3 = -67;
         assertEquals(expectedDistance3, Utils.dot(aVec3, bVec3), 0.0001f);
     }
+
+    @Test
+    public void dotProductSparseTest() {
+        float[] aVec = {1.0f, 2.0f, 3.0f};
+        float[] bVec = {4.0f, 5.0f, 6.0f};
+        List<Integer> dimensions = Arrays.asList(0, 1, 2);
+
+        float result = Utils.dot(aVec, bVec, dimensions);
+
+        // Expected dot product: 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
+        assertEquals(32.0f, result, 0.0001f);
+
+        float[] aVec2 = {1.0f, 2.0f, 3.0f, 4.0f};
+        float[] bVec2 = {5.0f, 6.0f, 7.0f, 8.0f};
+        List<Integer> dimensions2 = Arrays.asList(1, 3);  // Only consider the 2nd and 4th components
+
+        float result2 = Utils.dot(aVec2, bVec2, dimensions2);
+
+        // Expected dot product: 2*6 + 4*8 = 12 + 32 = 44
+        assertEquals(44.0f, result2, 0.0001f);
+
+        float[] aVec3 = {1.0f, 2.0f, 3.0f};
+        float[] bVec3 = {4.0f, 5.0f, 6.0f};
+        List<Integer> dimensions3 = Arrays.asList();
+
+        float result3 = Utils.dot(aVec3, bVec3, dimensions3);
+
+        // Expected dot product: 0, as no dimensions are specified
+        assertEquals(0.0f, result3, 0.0001f);
+    }
+
+    @Test
+    public void testMagnitude() {
+        float[] aVec = {3.0f, 4.0f};  // {3, 4} forms a 3-4-5 right triangle
+        float result = Utils.magnitude(aVec);
+
+        // Expected magnitude: sqrt(3^2 + 4^2) = sqrt(9 + 16) = sqrt(25) = 5
+        assertEquals(5.0f, result, 0.0001f);
+
+        float[] aVec2 = {1.0f, 2.0f, 3.0f};
+        float result2 = Utils.magnitude(aVec2);
+
+        // Expected magnitude: sqrt(1^2 + 2^2 + 3^2) = sqrt(1 + 4 + 9) = sqrt(14)
+        assertEquals(Math.sqrt(14), result2, 0.0001f);
+    }
+
+    @Test
+    public void testNormalize() {
+        float[] aVec = {3.0f, 4.0f};  // {3, 4} forms a 3-4-5 right triangle
+        float[] result = Utils.normalize(aVec);
+
+        // Expected normalized vector: {3/5, 4/5} = {0.6, 0.8}
+        assertArrayEquals(new float[]{0.6f, 0.8f}, result, 0.0001f);
+
+        float[] aVec2 = {1.0f, 2.0f, 3.0f};
+        float[] result2 = Utils.normalize(aVec2);
+
+        // Expected normalized vector: {1/sqrt(14), 2/sqrt(14), 3/sqrt(14)}
+        float invSqrt14 = 1.0f / (float) Math.sqrt(14);
+        assertArrayEquals(new float[]{1.0f * invSqrt14, 2.0f * invSqrt14, 3.0f * invSqrt14}, result2, 0.0001f);
+    }
+
+    @Test
+    public void testMean() {
+        float[] array1 = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+        float result1 = Utils.mean(array1);
+
+        // Expected mean: (1 + 2 + 3 + 4 + 5) / 5 = 3
+        assertEquals(3.0f, result1, 0.0001f);
+
+        float[] array2 = {0.0f, 0.0f, 0.0f, 0.0f};
+        float result2 = Utils.mean(array2);
+
+        // Expected mean: (0 + 0 + 0 + 0) / 4 = 0
+        assertEquals(0.0f, result2, 0.0001f);
+
+        float[] array3 = {-1.0f, 1.0f};
+        float result3 = Utils.mean(array3);
+
+        // Expected mean: (-1 + 1) / 2 = 0
+        assertEquals(0.0f, result3, 0.0001f);
+
+        float[] array4 = {1.5f, 2.5f, 3.5f};
+        float result4 = Utils.mean(array4);
+
+        // Expected mean: (1.5 + 2.5 + 3.5) / 3 = 2.5
+        assertEquals(2.5f, result4, 0.0001f);
+    }
+
+    @Test
+    public void testMedian() {
+        float[] array1 = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+        float result1 = Utils.median(array1);
+
+        // Expected median: 3.0
+        assertEquals(3.0f, result1, 0.0001f);
+
+        float[] array2 = {7.0f, 2.0f, 10.0f, 1.0f, 5.0f, 9.0f};
+        float result2 = Utils.median(array2);
+
+        // Expected median: 6.0
+        assertEquals(6.0f, result2, 0.0001f);
+
+        float[] array3 = {0.0f, 0.0f, 0.0f, 0.0f};
+        float result3 = Utils.median(array3);
+
+        // Expected median: 0.0
+        assertEquals(0.0f, result3, 0.0001f);
+
+        float[] array4 = {-1.0f, 1.0f, 2.0f, 3.0f};
+        float result4 = Utils.median(array4);
+
+        // Expected median: (1.0 + 2.0) / 2 = 1.5
+        assertEquals(1.5f, result4, 0.0001f);
+
+        float[] array5 = {3.5f, 2.5f, 1.5f, 4.5f};
+        float result5 = Utils.median(array5);
+
+        // Expected median: (2.5 + 3.5) / 2 = 3.0
+        assertEquals(3.0f, result5, 0.0001f);
+    }
+
+    @Test
+    public void testVariance() {
+        float[] array1 = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+        float result1 = Utils.variance(array1);
+
+        // Expected variance: ( (1-3)^2 + (2-3)^2 + (3-3)^2 + (4-3)^2 + (5-3)^2 ) / 5 = 2
+        // (4 + 1 + 0 + 1 + 4)/5
+        assertEquals(2.0f, result1, 0.0001f);
+
+        float[] array2 = {0.0f, 0.0f, 0.0f, 0.0f};
+        float result2 = Utils.variance(array2);
+
+        // Expected variance: ( (0-0)^2 + (0-0)^2 + (0-0)^2 + (0-0)^2 ) / 4 = 0
+        assertEquals(0.0f, result2, 0.0001f);
+
+        float[] array3 = {-1.0f, 1.0f};
+        float result3 = Utils.variance(array3);
+
+        // Expected variance: ( (-1-0)^2 + (1-0)^2 ) / 2 = 1
+        // (1 + 1) / 2
+        assertEquals(1.0f, result3, 0.0001f);
+
+        float[] array4 = {1.5f, 2.5f, 3.5f};
+        float result4 = Utils.variance(array4);
+
+        // Expected variance: ( (1.5-2.5)^2 + (2.5-2.5)^2 + (3.5-2.5)^2 ) / 3 = 1
+        // (1 + 0 + 1)/3
+        assertEquals(0.66666f, result4, 0.0001f);
+    }
+
+    @Test
+    public void testCalculateSplit() {
+        float[] array1 = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f};
+        float result1 = Utils.calculateSplit(array1);
+
+        assertEquals(0.4f, result1, 0.0001f);
+    }
+
+    @Test
+    public void testBruteForceKNN() {
+        // Sample corpus matrix
+        float[][] corpusMatrix = {
+            {1.0f, 2.0f, 3.0f},
+            {4.0f, 5.0f, 6.0f},
+            {7.0f, 8.0f, 9.0f},
+            {10.0f, 11.0f, 12.0f}
+        };
+
+        // Sample query vector
+        float[] qVec = {1.0f, 1.0f, 1.0f};
+        
+        int k = 2;  // Number of nearest neighbors to find
+
+        int[] result = Utils.bruteForceKNN(corpusMatrix, qVec, k);
+
+        // Expected indices of the nearest neighbors in corpusMatrix: {0, 1}
+        assertArrayEquals(new int[]{0, 1}, result);
+
+        // Another example with a different query vector
+        float[] qVec2 = {9.0f, 9.0f, 9.0f};
+
+        int[] result2 = Utils.bruteForceKNN(corpusMatrix, qVec2, k);
+
+        // Expected indices of the nearest neighbors in corpusMatrix: {2, 3}
+        assertArrayEquals(new int[]{2, 3}, result2);
+
+        // Test with k = 1
+        int k2 = 1;
+        
+        int[] result3 = Utils.bruteForceKNN(corpusMatrix, qVec, k2);
+
+        // Expected indices of the nearest neighbors in corpusMatrix: {0}
+        assertArrayEquals(new int[]{0}, result3);
+
+        // Test with a larger corpus matrix and k = 3
+        float[][] corpusMatrix2 = {
+            {2.0f, 3.0f},
+            {4.0f, 5.0f},
+            {6.0f, 7.0f},
+            {8.0f, 9.0f},
+            {10.0f, 11.0f}
+        };
+
+        float[] qVec3 = {1.0f, 1.0f};
+
+        int k3 = 3;
+
+        int[] result4 = Utils.bruteForceKNN(corpusMatrix2, qVec3, k3);
+
+        // Expected indices of the nearest neighbors in corpusMatrix2: {0, 1, 2}
+        assertArrayEquals(new int[]{0, 1, 2}, result4);
+    }
+
 
     @Test
     public void quickSelectTest() {

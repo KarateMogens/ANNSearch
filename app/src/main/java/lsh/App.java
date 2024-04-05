@@ -262,7 +262,7 @@ public class App {
 
     public static void main(String[] args) {
         //FOR JAR BUILD
-        // App myApp = new App(args[0]);
+        //App myApp = new App(args[0]);
         //FOR RUNNING IN IDE
         App myApp = new App("app/src/main/resources/config.properties");
         

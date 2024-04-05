@@ -277,9 +277,7 @@ public class Utils {
             k++;
         }
         return n >= 2 && k * k > n;
-      }
-
-    
+    }
 
     public static float variance(float[] array) {
         
@@ -293,7 +291,7 @@ public class Utils {
             sqDiff += (array[i] - mean) * (array[i] - mean);
         }
     
-        return (float) (sqDiff / (size -1));
+        return (float) sqDiff / size;
 
     }
 
@@ -318,8 +316,6 @@ public class Utils {
         }
         return median;
     }
-
-
 
     public static float calculateSplit(float[] array) {
         
