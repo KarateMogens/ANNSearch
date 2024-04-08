@@ -28,7 +28,7 @@ public class HashTable implements Searchable, Serializable {
 
     public void fit(float[][] corpusMatrix) {
 
-        initP(corpusMatrix.length);
+        initP();
         initList();
 
         // Hash each individual corpus point using all hashfunctions
@@ -50,13 +50,16 @@ public class HashTable implements Searchable, Serializable {
         }
     }
 
-    private void initP(long corpusSize) {
-        // Initialize the value P for reference hashing
-        // where P > n^2 and P is prime
-        P = corpusSize * corpusSize;
-        while (!Utils.isPrime(P)) {
-            P++;
-        }
+    private void initP() {
+        
+        /* USE MERSENNE PRIME 2^61 - 1 for reduced collision chance */
+        P = (1L << 61) -1;
+       
+        // Initialize the value P for reference hashing where P > n^2 and P is prime
+        // P = corpusSize * corpusSize;
+        // while (!Utils.isPrime(P)) {
+        //     P++;
+        // }
     }
 
     private void initList() {
@@ -88,9 +91,9 @@ public class HashTable implements Searchable, Serializable {
         // Hash indidivual hash values into a single long value
         long listHashValue = 0;
         for (int i = 0; i < list.length; i++) {
-            listHashValue += (list[i] * listHashing[i]);
+            listHashValue = (listHashValue + (list[i] * listHashing[i])) % P;
         }
-        return listHashValue % P;
+        return listHashValue;
 
     }
 

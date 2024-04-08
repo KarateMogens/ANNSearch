@@ -13,11 +13,15 @@ public class ANNSearcher {
     private List<Searchable> searchables;
     private float[][] corpusMatrix;
     private Integer[][] neighborsTable;
+    private float[] weightedVoteFreq;
+    private int[] voteFreq;
 
     public ANNSearcher(List<Searchable> searchables, float[][] corpusMatrix) {
         this.searchables = searchables;
         this.corpusMatrix = corpusMatrix;
         this.neighborsTable = null;
+        this.weightedVoteFreq = new float[corpusMatrix.length];
+        this.voteFreq = new int[corpusMatrix.length];
     }
 
     public float[][] getCorpusMatrix() {
@@ -36,6 +40,8 @@ public class ANNSearcher {
             this.neighborsTable[i] = temp;
         }
     }
+
+
 
     /* ----------- SEARCH STRATEGIES ----------- */
 
@@ -119,7 +125,6 @@ public class ANNSearcher {
 
     public int[] naturalClassifierSearchRawCount(int[] CSize, float[] qVec, int k, int threshold) {
         
-       
         HashMap<Integer, Integer> corpusVotes = getRawCountVoteMap(qVec);
         
         List<Integer> candidateSet = new LinkedList<>();
@@ -157,6 +162,14 @@ public class ANNSearcher {
         }
         CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+
+    }
+
+    private void resetWeightedVotes() {
+        
+    }
+
+    private void resetVotes() {
 
     }
 

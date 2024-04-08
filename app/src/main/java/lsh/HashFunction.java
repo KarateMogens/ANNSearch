@@ -8,13 +8,13 @@ public class HashFunction implements Serializable {
     private float[] aVec;
     private double b;
     private double r;
+    private static Random randomGen = new Random();
 
     public HashFunction(int d, double r) {
 
         this.r = r;
         // b is drawn from uniform distribution [0,r]
-        Random randomGen = new Random();
-
+        
         b = randomGen.nextFloat() * r;
 
         // random d-dimensional vector where each component is drawn from N(0,1)
