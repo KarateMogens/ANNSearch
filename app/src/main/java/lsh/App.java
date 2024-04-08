@@ -38,12 +38,12 @@ public class App {
     float[][] train;
     String metric;
     // FOR JAR BUILD
-    // private static final String DATADIRECTORY = "./data";
-    // private static final String RESULTSDIRECTORY = "./results";
+    private static final String DATADIRECTORY = "./data";
+    private static final String RESULTSDIRECTORY = "./results";
 
     // FOR RUNNING IN IDE
-    private static final String DATADIRECTORY = "app/src/main/resources/data";
-    private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
+    // private static final String DATADIRECTORY = "app/src/main/resources/data";
+    // private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
 
     public App(String configFilePath) {
 
@@ -262,9 +262,9 @@ public class App {
 
     public static void main(String[] args) {
         //FOR JAR BUILD
-        // App myApp = new App(args[0]);
+        App myApp = new App(args[0]);
         //FOR RUNNING IN IDE
-        App myApp = new App("app/src/main/resources/config.properties");
+        // App myApp = new App("app/src/main/resources/config.properties");
         
 
         myApp.runBenchmarks();

@@ -1,5 +1,6 @@
 package lsh;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -65,26 +66,9 @@ public class ANNSearcher {
 
     public int[] votingSearch(int[] CSize, float[] qVec, int k, int threshold) {
 
-        // Initialize candidate set and frequency counter
+        resetVotes();
+        
         List<Integer> candidateSet = new LinkedList<>();
-
-        // Should probably use a votemap instead of frequency array
-        HashMap<Integer,Integer> voteMap = getVoteMap(qVec);
-
-        for (Entry<Integer,Integer> entry : voteMap.entrySet()) {
-            if (entry.getValue() >= threshold) {
-                candidateSet.add(entry.getKey());
-            }
-        }
-
-        CSize[0] = candidateSet.size();
-        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
-    }
-
-    private HashMap<Integer, Integer> getVoteMap(float[] qVec) {
-
-        // Consider instantiating with larger initial capacity to avoid excessive rehashing
-        HashMap<Integer, Integer> corpusVotes = new HashMap<>(corpusMatrix.length/100);
 
         for (Searchable searchable : searchables) {
             Collection<Integer> searchResult = searchable.search(qVec);
@@ -94,137 +78,130 @@ public class ANNSearcher {
 
             for (Integer cIndex : searchResult) {
                 // Count votes of partition elements
-                if (corpusVotes.containsKey(cIndex)) {
-                    corpusVotes.replace(cIndex, corpusVotes.get(cIndex) + 1);
-                } else {
-                    corpusVotes.put(cIndex, 1);
-                }
-            }
-        }
-
-        return corpusVotes;
-    }
-
-    public int[] naturalClassifierSearch(int CSize[], float[] qVec, int k, float threshold) {
-
-        HashMap<Integer, Float> corpusVotes = getNCVoteMap(qVec);
-
-        //Iterate over all elements, adding only candidates to C with adequate vote average
-        List<Integer> candidateSet = new LinkedList<>();
-        int L = searchables.size();
-        for (Entry<Integer,Float> entry : corpusVotes.entrySet()) {
-            if (entry.getValue() / L >= threshold) {
-                candidateSet.add(entry.getKey());
+                if (++voteFreq[cIndex] == threshold) {
+                    candidateSet.add(cIndex);
+                } 
             }
         }
 
         CSize[0] = candidateSet.size();
+        return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
+    }
+
+    public int[] naturalClassifierSearch(int CSize[], float[] qVec, int k, float threshold) {
+
+        // Reset counting array
+        resetWeightedVotes();
+
+        Set<Integer> candidateSet = new HashSet<>();
+        
+        for (Searchable searchable : searchables) {
+            Collection<Integer> searchResult = searchable.search(qVec);
+            if (searchResult == null) {
+                continue;
+            }
+            // Calculate voteweight
+            float voteWeight = 1.0f/(searchResult.size()*searchables.size());
+
+            for (Integer cIndex : searchResult) {
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
+                    // Increment vote and check if above threshold
+                    if ((weightedVoteFreq[neighborOfcIndex] += voteWeight) >= threshold) {
+                        candidateSet.add(neighborOfcIndex);
+                    }
+                }
+            }
+        }
+
+        CSize[0] = candidateSet.size();
+        // Brute force candidate set
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
 
     }
 
     public int[] naturalClassifierSearchRawCount(int[] CSize, float[] qVec, int k, int threshold) {
         
-        HashMap<Integer, Integer> corpusVotes = getRawCountVoteMap(qVec);
-        
+        resetVotes();
+
         List<Integer> candidateSet = new LinkedList<>();
-        for (Entry<Integer,Integer> entry : corpusVotes.entrySet()) {
-            if (entry.getValue() >= threshold) {
-                candidateSet.add(entry.getKey());
+        
+        for (Searchable searchable : searchables) {
+            Collection<Integer> searchResult = searchable.search(qVec);
+            if (searchResult == null) {
+                continue;
+            }
+
+            for (Integer cIndex : searchResult) {
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
+                    if (++voteFreq[neighborOfcIndex] == threshold) {
+                        candidateSet.add(neighborOfcIndex);
+                    }
+                }
             }
         }
+
         CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
-
+        
     }
 
     public int[] naturalClassifierSearchSetSize(int[] CSize, float[] qVec, int k, int candidateSetSize) {
       
-        HashMap<Integer, Float> corpusVotes = getNCVoteMap(qVec);
+        resetWeightedVotes();
+
+        List<Integer> nonZeroVotes = new LinkedList<>();
+
+        for (Searchable searchable : searchables) {
+            Collection<Integer> searchResult = searchable.search(qVec);
+            if (searchResult == null) {
+                continue;
+            }
+            // Calculate voteweight
+            float voteWeight = 1.0f/(searchResult.size()*searchables.size());
+
+            for (Integer cIndex : searchResult) {
+                // Count votes of neighbors in partition
+                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
+                    // Increment vote
+                    if (weightedVoteFreq[neighborOfcIndex] == 0.0f) {
+                        nonZeroVotes.add(neighborOfcIndex);
+                    }
+                    weightedVoteFreq[neighborOfcIndex] += voteWeight;
+                }
+            }
+        }
         
         // If max candidatesetsize not reached, all elements are part of C
-        if (corpusVotes.size() < candidateSetSize) {
-            return Utils.bruteForceKNN(corpusMatrix, qVec, corpusVotes.keySet(), k);
+        if (nonZeroVotes.size() < candidateSetSize) {
+            return Utils.bruteForceKNN(corpusMatrix, qVec, nonZeroVotes, k);
         }
         
         // Convert all vote entries into an array which is compatible with quickSelect.
-        Vote[] votes = new Vote[corpusVotes.size()];
+        Vote[] votes = new Vote[nonZeroVotes.size()];
         int ctr = 0;
-        for (Entry<Integer,Float> entry : corpusVotes.entrySet()) {
-            votes[ctr++] = new Vote(entry.getKey(), entry.getValue());
+        for (Integer cIndex : nonZeroVotes) {
+            votes[ctr++] = new Vote(cIndex, weightedVoteFreq[cIndex]);
         }
 
         // Pick only top candidates
-        int location = Utils.quickSelect(votes, 0, corpusVotes.size()-1, candidateSetSize);
+        int location = Utils.quickSelect(votes, 0, nonZeroVotes.size()-1, candidateSetSize);
         List<Integer> candidateSet = new LinkedList<>();
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
         }
+
         CSize[0] = candidateSet.size();
         return Utils.bruteForceKNN(corpusMatrix, qVec, candidateSet, k);
-
     }
 
     private void resetWeightedVotes() {
-        
+        Arrays.fill(weightedVoteFreq, 0.0f);
     }
 
     private void resetVotes() {
-
-    }
-
-    // Helper method for naturalClassifierSearch and naturalClassifierSearchSetSize
-    private HashMap<Integer, Float> getNCVoteMap(float[] qVec) {
-
-        // Consider instantiating with larger initial capacity to avoid excessive rehashing
-        HashMap<Integer, Float> corpusVotes = new HashMap<>(corpusMatrix.length/100);
-
-        for (Searchable searchable : searchables) {
-            Collection<Integer> searchResult = searchable.search(qVec);
-            if (searchResult == null) {
-                continue;
-            }
-
-            // Account for varying partition size
-            Float voteWeight = (float) 1 / searchResult.size();
-            for (Integer cIndex : searchResult) {
-                // Count votes of neighbors in partition
-                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
-                    if (corpusVotes.containsKey(neighborOfcIndex)) {
-                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) + voteWeight);
-                    } else {
-                        corpusVotes.put(neighborOfcIndex, voteWeight);
-                    }
-                }
-            }
-        }
-
-        return corpusVotes;
-    }
-
-    private HashMap<Integer, Integer> getRawCountVoteMap(float[] qVec) {
-
-        HashMap<Integer, Integer> corpusVotes = new HashMap<>(corpusMatrix.length/100);
-
-        for (Searchable searchable : searchables) {
-            Collection<Integer> searchResult = searchable.search(qVec);
-            if (searchResult == null) {
-                continue;
-            }
-
-            for (Integer cIndex : searchResult) {
-                // Count votes of neighbors in partition
-                for (Integer neighborOfcIndex : neighborsTable[cIndex]) {
-                    if (corpusVotes.containsKey(neighborOfcIndex)) {
-                        corpusVotes.replace(neighborOfcIndex, corpusVotes.get(neighborOfcIndex) + 1);
-                    } else {
-                        corpusVotes.put(neighborOfcIndex, 1);
-                    }
-                }
-            }
-        }
-
-        return corpusVotes;
+        Arrays.fill(voteFreq, 0);
     }
    
     public int[] bruteForceSearch(int[] CSize, float[] qVec, int k) {
