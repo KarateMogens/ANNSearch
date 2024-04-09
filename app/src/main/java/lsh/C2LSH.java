@@ -131,7 +131,7 @@ public class C2LSH implements Searchable, Serializable {
 
         public void increaseWidth(int R) {
             // Shift pStart left on the real line, pEnd right on the real line.
-            pStart = (int) Math.floor( (double) bid/R)*R;
+            pStart = (int) Math.floor((double) bid/R)*R;
             pEnd = pStart + R-1;
         }
 

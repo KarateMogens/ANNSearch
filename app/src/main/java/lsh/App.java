@@ -82,7 +82,7 @@ public class App {
             logger.info("Normalized dataset to unit length");
         }
 
-        factory.setDataset(configProperties.getProperty("dataset"), metric, train);
+        factory.setDataset(configProperties.getProperty("dataset"), train);
     }
 
     private void runBenchmarks() {
@@ -153,6 +153,8 @@ public class App {
                     return factory.getNCTreeSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]), "RP", Integer.parseInt(args[2]));
                 case "LSH":
                     return factory.getNCLSHSearcher(Integer.parseInt(args[0]), Float.parseFloat(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+                case "AngLSH":
+                    return factory.getAngNCLSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
                 case "C2LSH":
                     return factory.getNCC2LSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]),  Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
             }   

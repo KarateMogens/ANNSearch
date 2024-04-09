@@ -49,15 +49,16 @@ public class ANNSearcherFactory {
         kryo.register(RKDTree.class, new JavaSerializer());
         kryo.register(RPTree.class, new JavaSerializer());
         kryo.register(HashTable.class, new JavaSerializer());
+        kryo.register(AngHashTable.class, new JavaSerializer());
+        kryo.register(BinaryHash.class, new JavaSerializer());
         kryo.register(Tree.class, new JavaSerializer());
         kryo.register(java.util.ArrayList.class, new JavaSerializer());
         kryo.register(int[][].class, new JavaSerializer());
         return factory;
     }
 
-    public void setDataset(String datasetFile, String metric, float[][] corpusMatrixInput) {
+    public void setDataset(String datasetFile, float[][] corpusMatrixInput) {
         
-
         DATASETFILENAME = datasetFile;
         DATASET = datasetFile.substring(0, DATASETFILENAME.lastIndexOf("."));
         
@@ -196,6 +197,65 @@ public class ANNSearcherFactory {
     }
 
 
+    // ------------ Angular LSH ------------
+
+
+    private ANNSearcher getAngLSHSearcher(int K, int L) throws FileNotFoundException {
+
+        if (DATASETFILENAME == null) {
+            throw new FileNotFoundException("No dataset specified.");
+        }
+
+        // float[][] corpusMatrix = getCorpusMatrix();
+
+        List<Searchable> searchables;
+        File datastructure = getSuitableAngLSH(K, L);
+        
+        if (datastructure == null) {
+            // Create a new list of HashTables
+            searchables = searchableAngLSH(K, L, corpusMatrix);
+
+            // Write searchables to disk
+            String fileName = String.format("AngLSH_%1$d_%2$d.ser", K, L);
+            writeToDisk(searchables, DATASTRUCTUREDIRECTORY, fileName);
+
+        } else {
+            // Read searchables from disk and reduce size
+            searchables = (List<Searchable>) readFromDisk(DATASTRUCTUREDIRECTORY, datastructure);
+            if (searchables.size() > L) {
+                searchables = new LinkedList<>(searchables.subList(0, L));
+            }
+        }
+
+        return new ANNSearcher(searchables, corpusMatrix);
+    }
+
+    public ANNSearcher getAngNCLSHSearcher(int K, int L, int k) throws FileNotFoundException {
+
+        ANNSearcher LSHSearcher = getAngLSHSearcher(K, L);
+        int[][] secondaryIndexMatrix = getSecondIndex(k);
+        LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
+
+        return LSHSearcher;
+    }   
+
+    private List<Searchable> searchableAngLSH(int K, int L, float[][] corpusMatrix) {
+        
+        logger.info("Started constructing AngLSH: K = " + K + ", L = " + L);
+        int d = corpusMatrix[0].length;
+
+        List<Searchable> searchables = new ArrayList<Searchable>(L);
+        for (int l = 0; l < L; l++) {
+            Searchable hashTable = new AngHashTable(d, K);
+            hashTable.fit(corpusMatrix);
+            searchables.add(l, hashTable);
+            logger.trace("Constructed AngLSH " + (l+1) + "/" + L);
+        }
+        logger.info("Finished constructing AngLSH " + "K = " + K + ", L = " + L);
+        return searchables;
+    }
+    
+
     /* ----------- Collision Counting LSH ----------- */
 
     public ANNSearcher getC2LSHSearcher(int K, int minSize, int threshold, int L) throws FileNotFoundException {
@@ -330,7 +390,32 @@ public class ANNSearcherFactory {
             return file;
         }
         return null;
+ 
+    }
 
+    private File getSuitableAngLSH(int K, int L) {
+        File directory = new File(DATASTRUCTUREDIRECTORY);
+        File[] files = directory.listFiles();
+
+        // To iterate over alphabetically order, thus taking smallest suitable first.
+        Arrays.sort(files);
+
+        Pattern pattern = Pattern.compile("AngLSH_(\\d+)_(\\d+).ser");
+
+        for (File file : files) {
+            String fileName = file.getName();
+            Matcher match = pattern.matcher(fileName);
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K) {
+                continue;
+            }
+
+            if (Integer.parseInt(match.group(2)) < L) {
+                continue;
+            }
+            return file;
+        }
+        return null;
+ 
     }
 
     private File getSuitableC2LSH(int K, int L) {
