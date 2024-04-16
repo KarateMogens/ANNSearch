@@ -227,6 +227,12 @@ public class App {
         writer.int32().setAttr("/", "count", results.getCount());
         // Mean query time (best mean query time if multiple runs are used)
         writer.float32().setAttr("/", "best_search_time", results.getMeanQueryTime());
+        // Mean candidate set size 
+        writer.float32().setAttr("/", "mean_candidate_set_size", results.getMeanCandidateSetSize());
+        // Median candidate set size 
+        writer.float32().setAttr("/", "mean_candidate_set_size", results.getMedianCandidateSetSize());
+        // Standard deviation of query time
+        writer.float32().setAttr("/", "std_dev_query_time", results.getStandardDeviation());
 
         writer.close();
     }

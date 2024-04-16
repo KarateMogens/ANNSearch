@@ -28,7 +28,8 @@ public class HashTable implements Searchable, Serializable {
 
     public void fit(float[][] corpusMatrix) {
 
-        initP();
+        /* USE MERSENNE PRIME 2^61 - 1 for reduced collision chance */
+        P = (1L << 61) -1;
         initList();
 
         // Hash each individual corpus point using all hashfunctions
@@ -48,18 +49,6 @@ public class HashTable implements Searchable, Serializable {
             }
             partition.add(cIndex);
         }
-    }
-
-    private void initP() {
-        
-        /* USE MERSENNE PRIME 2^61 - 1 for reduced collision chance */
-        P = (1L << 61) -1;
-       
-        // Initialize the value P for reference hashing where P > n^2 and P is prime
-        // P = corpusSize * corpusSize;
-        // while (!Utils.isPrime(P)) {
-        //     P++;
-        // }
     }
 
     private void initList() {

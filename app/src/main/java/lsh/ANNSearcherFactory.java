@@ -27,6 +27,9 @@ import java.util.regex.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+//
+import java.util.Locale;
+
 public class ANNSearcherFactory {
 
     private static final Logger logger = LogManager.getLogger(ANNSearcherFactory.class);
@@ -54,6 +57,7 @@ public class ANNSearcherFactory {
         kryo.register(Tree.class, new JavaSerializer());
         kryo.register(java.util.ArrayList.class, new JavaSerializer());
         kryo.register(int[][].class, new JavaSerializer());
+        Locale.setDefault(Locale.UK);
         return factory;
     }
 
@@ -375,12 +379,12 @@ public class ANNSearcherFactory {
         // To iterate over alphabetically order, thus taking smallest suitable first.
         Arrays.sort(files);
 
-        Pattern pattern = Pattern.compile("LSH_(\\d+)_(\\d+,\\d+)_(\\d+).ser");
+        Pattern pattern = Pattern.compile("LSH_(\\d+)_(\\d+.\\d+)_(\\d+).ser");
 
         for (File file : files) {
             String fileName = file.getName();
             Matcher match = pattern.matcher(fileName);
-            if (!match.matches() || Integer.parseInt(match.group(1)) != K || Float.parseFloat(match.group(2).replace(",", ".")) != r) {
+            if (!match.matches() || Integer.parseInt(match.group(1)) != K || Float.parseFloat(match.group(2)) != r) {
                 continue;
             }
 
