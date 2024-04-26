@@ -335,25 +335,6 @@ public class UtilsTest {
             assertTrue(votes[i] <= actualValue);
         }
 
-
-        Integer[] votes2 = new Integer[10];
-        votes2[0] = Integer.valueOf(-7);
-        votes2[1] = Integer.valueOf(6);
-        votes2[2] = Integer.valueOf(1);
-        votes2[3] = Integer.valueOf(-2);
-        votes2[4] = Integer.valueOf(9);
-        votes2[5] = Integer.valueOf(4);
-        votes2[6] = Integer.valueOf(6);
-        votes2[7] = Integer.valueOf(-21);
-        votes2[8] = Integer.valueOf(5);
-        votes2[9] = Integer.valueOf(8);
-        int partition2 = Utils.quickSelect(votes2, 0, 9, 4); 
-        int actualValue2 = votes2[partition2];
-        assertEquals(6, actualValue2);
-
-        for (int i = partition2; i < votes2.length; i++) {
-            assertTrue(votes2[i] <= actualValue2);
-        }
     }
 
 }

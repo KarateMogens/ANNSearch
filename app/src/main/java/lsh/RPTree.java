@@ -131,6 +131,7 @@ public class RPTree extends Tree implements Searchable, Serializable {
                 randomVec[i] = 0;
             }
         }
+        randomVec = Utils.normalize(randomVec);
         return new SparseVector(randomVec, nonZeroComponents);
     }
 

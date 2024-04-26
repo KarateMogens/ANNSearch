@@ -21,8 +21,9 @@ public class HashFunction implements Serializable {
         aVec = new float[d];
         for (int i = 0; i < d; i++) {
             aVec[i] = (float) randomGen.nextGaussian();
-
         }
+
+        aVec = Utils.normalize(aVec);
 
     }
 

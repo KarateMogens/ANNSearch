@@ -269,9 +269,23 @@ public class App {
     }
 
     public static void main(String[] args) {
-        //FOR JAR BUILD
+
+        // C2LSH.PointerSet myPointerSet = new C2LSH.PointerSet(5);
+
+        // int oldR = 1;
+        // int R = 2;
+        // while (true) {
+        //     // for (int iterate = oldR; oldR <= R; oldR++) {
+        //     //     System.out.println(myPointerSet.next());
+        //     // }
+        //     oldR = R;
+        //     R = R*R;
+        //     myPointerSet.increaseWidth(R);
+        // }
+       
+        // // FOR JAR BUILD
         App myApp = new App(args[0]);
-        //FOR RUNNING IN IDE
+        // FOR RUNNING IN IDE
         // App myApp = new App("app/src/main/resources/config.properties");
         
 

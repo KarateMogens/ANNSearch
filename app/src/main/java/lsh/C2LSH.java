@@ -111,7 +111,7 @@ public class C2LSH implements Searchable, Serializable {
         }
     }
 
-    class PointerSet implements Serializable {
+    static class PointerSet implements Serializable {
 
         int pStart;
         int pLeft;
@@ -131,8 +131,9 @@ public class C2LSH implements Searchable, Serializable {
 
         public void increaseWidth(int R) {
             // Shift pStart left on the real line, pEnd right on the real line.
-            pStart = (int) Math.floor((double) bid/R)*R;
-            pEnd = pStart + R-1;
+            int expansion = (R-1) / 2;
+            pStart = bid - expansion;
+            pEnd = bid + expansion;
         }
 
         public int next() {
