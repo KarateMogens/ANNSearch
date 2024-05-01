@@ -230,7 +230,7 @@ public class App {
         // Mean candidate set size 
         writer.float32().setAttr("/", "mean_candidate_set_size", results.getMeanCandidateSetSize());
         // Median candidate set size 
-        writer.float32().setAttr("/", "mean_candidate_set_size", results.getMedianCandidateSetSize());
+        writer.float32().setAttr("/", "median_candidate_set_size", results.getMedianCandidateSetSize());
         // Standard deviation of query time
         writer.float32().setAttr("/", "std_dev_query_time", results.getStandardDeviation());
 
