@@ -23,8 +23,6 @@ public class HashFunction implements Serializable {
             aVec[i] = (float) randomGen.nextGaussian();
         }
 
-        aVec = Utils.normalize(aVec);
-
     }
 
     // Implement constructor with seed value for testing? Will generate same random

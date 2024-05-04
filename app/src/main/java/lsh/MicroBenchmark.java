@@ -178,7 +178,7 @@ public class MicroBenchmark {
             return queryTimes;
         }
 
-        public void calculateStatistics(int[][] trueNeighbors) {
+        public void calculateStatistics(int[][] trueNeighbors, float[][] trueDistances) {
             this.meanQueryTime = Utils.mean(queryTimes);
             this.standardDeviation = (float) Math.sqrt(Utils.variance(queryTimes));
     
@@ -207,12 +207,8 @@ public class MicroBenchmark {
             float[] recalls = new float[neighbors.length];
             for (int i = 0; i < neighbors.length; i++) {
                 float recall = 0;
-                List<Integer> trueNeighborsList = Arrays.stream(trueNeighbors[i])   // IntStream
-                            .limit(count)                                           // Take only k first neighbors
-                            .boxed()                                                // Stream<Integer>
-                            .collect(Collectors.toList());
                 for (int j = 0; j < neighbors[i].length; j++) {
-                    if (trueNeighborsList.contains(neighbors[i][j])) {
+                    if (distances[i][j] <= trueDistances[i][count-1]) {
                         recall += 1.0f;
                     }
                 }

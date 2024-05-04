@@ -20,6 +20,7 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.regex.*;
 
@@ -29,6 +30,11 @@ import org.apache.logging.log4j.Logger;
 
 //
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ANNSearcherFactory {
 
@@ -41,9 +47,9 @@ public class ANNSearcherFactory {
     private static float[][] corpusMatrix;
 
     // FOR JAR BUILD
-    private static String DATASTRUCTUREDIRECTORY = "./datastructures";
+    // private static String DATASTRUCTUREDIRECTORY = "./datastructures";
     // FOR RUNNING IN IDE
-    // private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
+    private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
 
     private ANNSearcherFactory() {}
 
@@ -57,6 +63,7 @@ public class ANNSearcherFactory {
         kryo.register(Tree.class, new JavaSerializer());
         kryo.register(java.util.ArrayList.class, new JavaSerializer());
         kryo.register(int[][].class, new JavaSerializer());
+        kryo.setReferences(false); // Turned off to save memory during serialiation
         Locale.setDefault(Locale.UK);
         return factory;
     }
@@ -126,18 +133,17 @@ public class ANNSearcherFactory {
     private List<Searchable> searchableForest(int maxLeafSize, int L, float[][] corpusMatrix, String type) {
         logger.info("Started constructing searchable  forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
 
-        List<Searchable> searchables = new ArrayList<Searchable>(L);
-        for (int l = 0; l < L; l++) {
-            Searchable tree = null;
-            if (type.equals("RP")) {
-                tree = new RPTree(maxLeafSize);
-            } else if (type.equals("RKD")) {
-                tree = new RKDTree(maxLeafSize);
-            }
-            tree.fit(corpusMatrix);
-            searchables.add(l, tree);
-            logger.trace("Constructed tree " + (l+1) + "/" + L);
+        List<Searchable> searchables = new ArrayList<Searchable>(Collections.nCopies(L, null));
+        ExecutorService pool = new ForkJoinPool();
+        Future<?> finished = pool.submit(new BuildForestTask(searchables, 0, L-1, pool, type, maxLeafSize, corpusMatrix));
+        try {
+            finished.get();
+            BuildForestTask.resetCount();
+        } catch (ExecutionException | InterruptedException e) {
+            logger.error("Error constructing searchable forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
+            System.exit(1);
         }
+        pool.shutdown();
 
         logger.info("Finished constructing searchable forest: maxLeafSize = " + maxLeafSize + ", L = " +  L + ", type = "+ type);
         return searchables;
@@ -189,13 +195,17 @@ public class ANNSearcherFactory {
         logger.info("Started constructing LSH: K = " + K + ", r = " + r + ", L = " + L);
         int d = corpusMatrix[0].length;
 
-        List<Searchable> searchables = new ArrayList<Searchable>(L);
-        for (int l = 0; l < L; l++) {
-            Searchable hashTable = new HashTable(d, K, r);
-            hashTable.fit(corpusMatrix);
-            searchables.add(l, hashTable);
-            logger.trace("Constructed LSH " + (l+1) + "/" + L);
+        List<Searchable> searchables = new ArrayList<Searchable>(Collections.nCopies(L, null));
+        ExecutorService pool = new ForkJoinPool();
+        Future<?> finished = pool.submit(new BuildLSHTask(searchables, 0, L-1, pool, "", K, r, corpusMatrix));
+        try {
+            finished.get();
+            BuildForestTask.resetCount();
+        } catch (ExecutionException | InterruptedException e) {
+            logger.error("Error constructing searchable LSH: K = " + K + ", L = " +  L + ", type = normal");
+            System.exit(1);
         }
+        pool.shutdown();
         logger.info("Finished constructing LSH " + "K = " + K + ", r = " + r + ", L = " + L);
         return searchables;
     }
@@ -248,13 +258,17 @@ public class ANNSearcherFactory {
         logger.info("Started constructing AngLSH: K = " + K + ", L = " + L);
         int d = corpusMatrix[0].length;
 
-        List<Searchable> searchables = new ArrayList<Searchable>(L);
-        for (int l = 0; l < L; l++) {
-            Searchable hashTable = new AngHashTable(d, K);
-            hashTable.fit(corpusMatrix);
-            searchables.add(l, hashTable);
-            logger.trace("Constructed AngLSH " + (l+1) + "/" + L);
+        List<Searchable> searchables = new ArrayList<Searchable>(Collections.nCopies(L, null));
+        ExecutorService pool = new ForkJoinPool();
+        Future<?> finished = pool.submit(new BuildLSHTask(searchables, 0, L-1, pool, "", K, 0.0f, corpusMatrix));
+        try {
+            finished.get();
+            BuildForestTask.resetCount();
+        } catch (ExecutionException | InterruptedException e) {
+            logger.error("Error constructing searchable LSH: K = " + K + ", L = " +  L + ", type = AngLSH");
+            System.exit(1);
         }
+        pool.shutdown();
         logger.info("Finished constructing AngLSH " + "K = " + K + ", L = " + L);
         return searchables;
     }
@@ -299,11 +313,11 @@ public class ANNSearcherFactory {
 
     public ANNSearcher getNCC2LSHSearcher(int K, int minSize, int threshold, int L, int k) throws FileNotFoundException {
 
-        ANNSearcher LSHSearcher = getC2LSHSearcher(K, minSize, threshold, L);
+        ANNSearcher C2LSHSearcher = getC2LSHSearcher(K, minSize, threshold, L);
         int[][] secondaryIndexMatrix = getSecondIndex(k);
-        LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
+        C2LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
 
-        return LSHSearcher;
+        return C2LSHSearcher;
     }   
 
     private List<Searchable> searchableC2LSH(int K, int minSize, int threshold, int L, float[][] corpusMatrix) {
@@ -485,5 +499,126 @@ public class ANNSearcherFactory {
         return null;
     }
 
+    public static class BuildForestTask implements Runnable {
+
+        private final List<Searchable> searchables;
+        private final int low;
+        private final int high;
+        private final ExecutorService pool;
+        private final String type;
+        private final int maxLeafSize;
+        private final float[][] corpusMatrix;
+        private final int threshold = 2;
+        private final static AtomicInteger ctr = new AtomicInteger();
+        private final Logger logger = LogManager.getLogger(this);
+
+        public BuildForestTask(List<Searchable> searchables, int low, int high, ExecutorService pool, String type, int maxLeafSize, float[][] corpusMatrix) {
+            this.searchables = searchables;
+            this.low = low;
+            this.high = high;
+            this.pool = pool;
+            this.maxLeafSize = maxLeafSize;
+            this.type = type;
+            this.corpusMatrix = corpusMatrix;
+        }
+
+        public static void resetCount() {
+            ctr.set(0);
+        }
+
+        @Override
+        public void run() {
+            // Threshold reached, build trees in local thread
+            if ((high-low) <= threshold) {
+                for (int i = low; i <= high; i++) {
+                    Searchable tree = null;
+                    if (type.equals("RP")) {
+                        tree = new RPTree(maxLeafSize);
+                    } else if (type.equals("RKD")) {
+                        tree = new RKDTree(maxLeafSize);
+                    }
+                    tree.fit(corpusMatrix);
+                    searchables.set(i, tree);
+                    logger.trace("Constructed " + type + "-Tree: " + ctr.incrementAndGet());
+                }
+            // Split task into subtasks
+            } else {
+                int mid = low + (high-low)/2;
+                Future<?> f1 = pool.submit(new BuildForestTask(searchables, low, mid, pool, type, maxLeafSize, corpusMatrix));
+                Future<?> f2 = pool.submit(new BuildForestTask(searchables, mid+1, high, pool, type, maxLeafSize, corpusMatrix));
+                try {
+                    f1.get();
+                    f2.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.error("Error constructing searchable tree: maxLeafSize = " + maxLeafSize + ", type = "+ type);
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
+
+        }
+    }
+
+    public static class BuildLSHTask implements Runnable {
+
+        private final List<Searchable> searchables;
+        private final int low;
+        private final int high;
+        private final ExecutorService pool;
+        private final String type;
+        private final int K;
+        private final float r;
+        private final float[][] corpusMatrix;
+        private final int threshold = 2;
+        private final static AtomicInteger ctr = new AtomicInteger();
+        private final Logger logger = LogManager.getLogger(this);
+
+        public BuildLSHTask(List<Searchable> searchables, int low, int high, ExecutorService pool, String type, int K, float r, float[][] corpusMatrix) {
+            this.searchables = searchables;
+            this.low = low;
+            this.high = high;
+            this.pool = pool;
+            this.K = K;
+            this.r = r;
+            this.type = type;
+            this.corpusMatrix = corpusMatrix;
+        }
+
+        public static void resetCount() {
+            ctr.set(0);
+        }
+
+        @Override
+        public void run() {
+            // Threshold reached, build trees in local thread
+            if ((high-low) <= threshold) {
+                for (int i = low; i <= high; i++) {
+                    Searchable lsh = null;
+                    if (type.equals("Ang")) {
+                        lsh = new AngHashTable(corpusMatrix[0].length, K);
+                    } else {
+                        lsh = new HashTable(corpusMatrix[0].length, K, r);
+                    }
+                    lsh.fit(corpusMatrix);
+                    searchables.set(i, lsh);
+                    logger.trace("Constructed " + type + "LSH: " + ctr.incrementAndGet());
+                }
+            // Split task into subtasks
+            } else {
+                int mid = low + (high-low)/2;
+                Future<?> f1 = pool.submit(new BuildLSHTask(searchables, low, mid, pool, type, K, r, corpusMatrix));
+                Future<?> f2 = pool.submit(new BuildLSHTask(searchables, mid+1, high, pool, type, K, r, corpusMatrix));
+                try {
+                    f1.get();
+                    f2.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.error("Error constructing searchable LSH: K = " + K + ", type = "+ type);
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
+
+        }
+    }
 
 }

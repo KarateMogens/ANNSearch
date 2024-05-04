@@ -36,14 +36,15 @@ public class App {
     float[][] test;
     int[][] neighbors;
     float[][] train;
+    float[][] distances;
     String metric;
     // FOR JAR BUILD
-    private static final String DATADIRECTORY = "./data";
-    private static final String RESULTSDIRECTORY = "./results";
+    // private static final String DATADIRECTORY = "./data";
+    // private static final String RESULTSDIRECTORY = "./results";
 
     // FOR RUNNING IN IDE
-    // private static final String DATADIRECTORY = "app/src/main/resources/data";
-    // private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
+    private static final String DATADIRECTORY = "app/src/main/resources/data";
+    private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
 
     public App(String configFilePath) {
 
@@ -71,6 +72,7 @@ public class App {
         test = reader.readFloatMatrix("test");
         neighbors = reader.readIntMatrix("neighbors");
         train = reader.readFloatMatrix("train");
+        distances = reader.readFloatMatrix("distances");
         reader.close();
         logger.info("Succesfully loaded dataset: " + datasetFilePath);
 
@@ -181,7 +183,7 @@ public class App {
         // These statistics are only meant for guiding parameter configuration
         // the mean recall is calculated differently (based on distance) in ANN benchmarks
         // and may give differing results
-        results.calculateStatistics(neighbors);
+        results.calculateStatistics(neighbors, distances);
         System.out.printf("%-25s %s%n", "Mean seconds/query:", results.getMeanQueryTime());
         System.out.printf("%-25s %s%n", "Std. dev query time:", results.getStandardDeviation());
         System.out.printf("%-25s %s%n", "Max query time:", results.getMaxTime());
@@ -284,9 +286,9 @@ public class App {
         // }
        
         // // FOR JAR BUILD
-        App myApp = new App(args[0]);
+        // App myApp = new App(args[0]);
         // FOR RUNNING IN IDE
-        // App myApp = new App("app/src/main/resources/config.properties");
+        App myApp = new App("app/src/main/resources/config.properties");
         
 
         myApp.runBenchmarks();
