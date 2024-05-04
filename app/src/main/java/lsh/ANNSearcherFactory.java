@@ -47,9 +47,9 @@ public class ANNSearcherFactory {
     private static float[][] corpusMatrix;
 
     // FOR JAR BUILD
-    // private static String DATASTRUCTUREDIRECTORY = "./datastructures";
+    private static String DATASTRUCTUREDIRECTORY = "./datastructures";
     // FOR RUNNING IN IDE
-    private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
+    // private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
 
     private ANNSearcherFactory() {}
 
@@ -193,7 +193,6 @@ public class ANNSearcherFactory {
     private List<Searchable> searchableLSH(int K, float r, int L, float[][] corpusMatrix) {
         
         logger.info("Started constructing LSH: K = " + K + ", r = " + r + ", L = " + L);
-        int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(Collections.nCopies(L, null));
         ExecutorService pool = new ForkJoinPool();

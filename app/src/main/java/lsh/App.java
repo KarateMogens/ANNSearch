@@ -39,12 +39,12 @@ public class App {
     float[][] distances;
     String metric;
     // FOR JAR BUILD
-    // private static final String DATADIRECTORY = "./data";
-    // private static final String RESULTSDIRECTORY = "./results";
+    private static final String DATADIRECTORY = "./data";
+    private static final String RESULTSDIRECTORY = "./results";
 
     // FOR RUNNING IN IDE
-    private static final String DATADIRECTORY = "app/src/main/resources/data";
-    private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
+    // private static final String DATADIRECTORY = "app/src/main/resources/data";
+    // private static final String RESULTSDIRECTORY = "app/src/main/resources/results";
 
     public App(String configFilePath) {
 
@@ -271,24 +271,11 @@ public class App {
     }
 
     public static void main(String[] args) {
-
-        // C2LSH.PointerSet myPointerSet = new C2LSH.PointerSet(5);
-
-        // int oldR = 1;
-        // int R = 2;
-        // while (true) {
-        //     // for (int iterate = oldR; oldR <= R; oldR++) {
-        //     //     System.out.println(myPointerSet.next());
-        //     // }
-        //     oldR = R;
-        //     R = R*R;
-        //     myPointerSet.increaseWidth(R);
-        // }
        
         // // FOR JAR BUILD
-        // App myApp = new App(args[0]);
+        App myApp = new App(args[0]);
         // FOR RUNNING IN IDE
-        App myApp = new App("app/src/main/resources/config.properties");
+        // App myApp = new App("app/src/main/resources/config.properties");
         
 
         myApp.runBenchmarks();
