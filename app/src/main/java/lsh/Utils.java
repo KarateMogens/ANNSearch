@@ -183,22 +183,26 @@ public class Utils {
     }
 
     private static int partition(Comparable[] a, int lo, int hi) {
+        int piv = (int) ((Math.random() * (hi - lo)) + lo);
+        exch(a, hi, piv);
         Comparable pivotValue = a[hi];
         int pivotLoc = lo;
 
         for (int i = lo; i <= hi; i++) {
             if (less(pivotValue, a[i])) {
-                Comparable temp = a[i];
-                a[i] = a[pivotLoc];
-                a[pivotLoc] = temp;
+                exch(a, i, pivotLoc);
                 pivotLoc++;            
             }
         }
-
-        Comparable temp = a[hi];
-        a[hi] = a[pivotLoc];
-        a[pivotLoc] = temp;
+        
+        exch(a, hi, pivotLoc);
         return pivotLoc;     
+    }
+
+    private static void exch(Comparable[] a, int i, int j) {
+        Comparable temp = a[i];
+        a[i] = a[j];
+        a[j] = temp;
     }
 
     private static boolean less(Comparable u, Comparable v) {
