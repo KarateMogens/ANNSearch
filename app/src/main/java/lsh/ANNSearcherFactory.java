@@ -47,9 +47,9 @@ public class ANNSearcherFactory {
     private static float[][] corpusMatrix;
 
     // FOR JAR BUILD
-    // private static String DATASTRUCTUREDIRECTORY = "./datastructures";
+    private static String DATASTRUCTUREDIRECTORY = "./datastructures";
     // FOR RUNNING IN IDE
-    private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
+    // private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
 
     private ANNSearcherFactory() {}
 
