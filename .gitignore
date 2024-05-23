@@ -25,6 +25,8 @@
 app/src/main/resources/data/glove-200-angular.hdf5
 app/src/main/resources/data/sift-128-euclidean.hdf5
 app/src/main/resources/data/gist-960-euclidean.hdf5
+app/src/main/resources/data/glove-100-angular.hdf5
+app/src/main/resources/datastructures/glove-100-angular
 app/src/main/resources/datastructures/glove-200-angular
 app/src/main/resources/datastructures/sift-128-euclidean
 app/src/main/resources/datastructures/gist-960-euclidean
