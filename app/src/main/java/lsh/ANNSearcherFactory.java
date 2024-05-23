@@ -47,9 +47,9 @@ public class ANNSearcherFactory {
     private static float[][] corpusMatrix;
 
     // FOR JAR BUILD
-    private static String DATASTRUCTUREDIRECTORY = "./datastructures";
+    // private static String DATASTRUCTUREDIRECTORY = "./datastructures";
     // FOR RUNNING IN IDE
-    // private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
+    private static String DATASTRUCTUREDIRECTORY = "app/src/main/resources/datastructures";
 
     private ANNSearcherFactory() {}
 
@@ -262,7 +262,7 @@ public class ANNSearcherFactory {
         Future<?> finished = pool.submit(new BuildLSHTask(searchables, 0, L-1, pool, "", K, 0.0f, corpusMatrix));
         try {
             finished.get();
-            BuildForestTask.resetCount();
+            BuildLSHTask.resetCount();
         } catch (ExecutionException | InterruptedException e) {
             logger.error("Error constructing searchable LSH: K = " + K + ", L = " +  L + ", type = AngLSH");
             System.exit(1);
