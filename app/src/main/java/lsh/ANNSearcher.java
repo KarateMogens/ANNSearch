@@ -175,6 +175,7 @@ public class ANNSearcher {
         
         // If max candidatesetsize not reached, all elements are part of C
         if (nonZeroVotes.size() < candidateSetSize) {
+            CSize[0] = nonZeroVotes.size();
             return Utils.bruteForceKNN(corpusMatrix, qVec, nonZeroVotes, k);
         }
         

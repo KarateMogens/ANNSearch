@@ -18,14 +18,18 @@ public class C2LSH implements Searchable, Serializable {
     int threshold;
     int corpusMatrixSize;
 
-    public C2LSH(int d, int K, int minSize, int threshold) {
+    public C2LSH(int d, int K, int minSize, int threshol, boolean angular) {
         this.d = d;
         hashFunctions = new ArrayList<>(K);
         compoundHashTable = new ArrayList<>(K);
         for (int i = 0; i < K; i++) {
-            // Always set r to 1.
-            // This causes way too large buckets Angular distance case (max distance is 2)
-            hashFunctions.add(i, new HashFunction(d, 1));
+            // Always set r to 1 if euclidean, always 0.001 if angular.
+            if (angular) {
+                hashFunctions.add(i, new HashFunction(d, 0.001));
+            } else {
+                hashFunctions.add(i, new HashFunction(d, 1));
+            }
+            
         }
         this.minSize = minSize;
         this.threshold = threshold;

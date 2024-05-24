@@ -275,7 +275,7 @@ public class ANNSearcherFactory {
 
     /* ----------- Collision Counting LSH ----------- */
 
-    public ANNSearcher getC2LSHSearcher(int K, int minSize, int threshold, int L) throws FileNotFoundException {
+    public ANNSearcher getC2LSHSearcher(int K, int minSize, int threshold, int L, boolean angular) throws FileNotFoundException {
 
         if (DATASETFILENAME == null) {
             throw new FileNotFoundException("No dataset specified.");
@@ -284,14 +284,20 @@ public class ANNSearcherFactory {
         // float[][] corpusMatrix = getCorpusMatrix();
 
         List<Searchable> searchables;
-        File datastructure = getSuitableC2LSH(K, L);
+        File datastructure = getSuitableC2LSH(K, L, angular);
         
         if (datastructure == null) {
             // Create a new list of HashTables
-            searchables = searchableC2LSH(K, minSize, threshold, L, corpusMatrix);
+            searchables = searchableC2LSH(K, minSize, threshold, angular, L, corpusMatrix);
 
             // Write searchables to disk
-            String fileName = String.format("C2LSH_%1$d_%2$d.ser", K, L);
+            String fileName;
+            if (angular) {
+                fileName = String.format("AngC2LSH_%1$d_%2$d.ser", K, L);
+            } else {
+                fileName = String.format("C2LSH_%1$d_%2$d.ser", K, L);
+            }
+            
             writeToDisk(searchables, DATASTRUCTUREDIRECTORY, fileName);
 
         } else {
@@ -310,22 +316,22 @@ public class ANNSearcherFactory {
         return new ANNSearcher(searchables, corpusMatrix);
     }
 
-    public ANNSearcher getNCC2LSHSearcher(int K, int minSize, int threshold, int L, int k) throws FileNotFoundException {
+    public ANNSearcher getNCC2LSHSearcher(int K, int minSize, int threshold, int L, int k, boolean angular) throws FileNotFoundException {
 
-        ANNSearcher C2LSHSearcher = getC2LSHSearcher(K, minSize, threshold, L);
+        ANNSearcher C2LSHSearcher = getC2LSHSearcher(K, minSize, threshold, L, angular);
         int[][] secondaryIndexMatrix = getSecondIndex(k);
         C2LSHSearcher.setSecondaryIndex(secondaryIndexMatrix, k);
 
         return C2LSHSearcher;
     }   
 
-    private List<Searchable> searchableC2LSH(int K, int minSize, int threshold, int L, float[][] corpusMatrix) {
+    private List<Searchable> searchableC2LSH(int K, int minSize, int threshold, boolean angular, int L, float[][] corpusMatrix) {
         logger.info("Started constructing C2LSH: K = " + K + ", minSize = " + minSize + ", threshold = " + threshold + ", L = " +  L);
         int d = corpusMatrix[0].length;
 
         List<Searchable> searchables = new ArrayList<Searchable>(L);
         for (int l = 0; l < L; l++) {
-            Searchable hashTable = new C2LSH(d, K, minSize, threshold);
+            Searchable hashTable = new C2LSH(d, K, minSize, threshold, angular);
             hashTable.fit(corpusMatrix);
             searchables.add(l, hashTable);
             logger.trace("Constructed C2LSH " + (l+1) + "/" + L);
@@ -435,14 +441,20 @@ public class ANNSearcherFactory {
  
     }
 
-    private File getSuitableC2LSH(int K, int L) {
+    private File getSuitableC2LSH(int K, int L, boolean angular) {
         File directory = new File(DATASTRUCTUREDIRECTORY);
         File[] files = directory.listFiles();
 
         // To iterate over alphabetically order, thus taking smallest suitable first.
         Arrays.sort(files);
 
-        Pattern pattern = Pattern.compile("C2LSH_(\\d+)_(\\d+).ser");
+        Pattern pattern;
+        if (angular) {
+            pattern = Pattern.compile("AngC2LSH_(\\d+)_(\\d+).ser");
+        } else {
+            pattern = Pattern.compile("C2LSH_(\\d+)_(\\d+).ser");
+        }
+        
 
         for (File file : files) {
             String fileName = file.getName();

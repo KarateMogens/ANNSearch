@@ -158,7 +158,9 @@ public class App {
                 case "AngLSH":
                     return factory.getAngNCLSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
                 case "C2LSH":
-                    return factory.getNCC2LSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]),  Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+                    return factory.getNCC2LSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]),  Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), false);
+                case "AngC2LSH":
+                    return factory.getNCC2LSHSearcher(Integer.parseInt(args[0]), Integer.parseInt(args[1]),  Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), true);
             }   
         } catch (FileNotFoundException e) {
             logger.error("Error getting datastructure: " + datastructure + "with arguments: " + Arrays.toString(args));
