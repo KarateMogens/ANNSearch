@@ -35,7 +35,7 @@ app/src/main/resources/datastructures/fashion-mnist-784-euclidean/RKDTree*
 app/src/main/resources/datastructures/fashion-mnist-784-euclidean/LSH*
 app/src/main/resources/datastructures/fashion-mnist-784-euclidean/C2LSH*
 app/src/main/resources/results
-
+app/ANNSearchBuild
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*

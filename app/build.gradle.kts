@@ -64,6 +64,29 @@ tasks.jar {
         .map(::zipTree) // OR .map { zipTree(it) }
     from(dependencies)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    destinationDirectory.set(file("ANNSearchBuild"))
+
+}
+
+tasks.register<Copy>("copyResources") {
+    from("src/main/resources") // Source directory
+    exclude("log4j2.xml")
+    into("ANNSearchBuild") // Destination directory
+    doLast {
+        println("Copying config.properties to ANNSearch")
+    }
+}
+
+tasks.named("jar") {
+    finalizedBy(tasks.named("copyResources"))
+}
+
+// Ensure the copyResources task runs after the jar task
+tasks.named("copyResources") {
+    dependsOn(tasks.named("jar"))
+    dependsOn(tasks.named("distZip"))
+    dependsOn(tasks.named("distTar"))
+    dependsOn(tasks.named("startScripts"))
 }
 
 tasks.named<Test>("test") {
