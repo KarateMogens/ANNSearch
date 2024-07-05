@@ -111,6 +111,18 @@ public class App {
 
             for (String searchStrategyArgsList : searchStrategyArgs) {
                 String[] strategyArgs = getArgs(searchStrategyArgsList);
+
+                // Check if resultsfile already exists
+                String identifier = createIdentifier(datastructure, args, searchStrategy, strategyArgs);
+                String datasetName = getProperty("dataset").substring(0, getProperty("dataset").lastIndexOf("."));
+                String resultpath = RESULTSDIRECTORY + "/" + datasetName + "/" + strategyArgs[0];
+                File resultsFile = new File(resultpath + "/" + identifier + ".hdf5");
+                if (resultsFile.exists()) {
+                    logger.info("A result file of this configuration already exists. Skipping experiment.");
+                    System.out.println("\nA result file of this configuration already exists. Skipping experiment.");
+                    continue;
+                }
+
                 logger.info("Benchmarking: " + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
 
                 MicroBenchmark.Results results = null;
