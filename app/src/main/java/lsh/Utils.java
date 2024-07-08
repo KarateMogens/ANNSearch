@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Utils {
+    private static int recursionDepth;
     
     private static final Logger logger = LogManager.getLogger(Utils.class);
 
@@ -183,7 +184,8 @@ public class Utils {
     }
 
     private static int partition(Comparable[] a, int lo, int hi) {
-        int piv =  ((int) Math.random() * (hi - lo)) + lo;
+        recursionDepth++;
+        int piv =  ((int) (Math.random() * (hi - lo))) + lo;
         exch(a, hi, piv);
         Comparable pivotValue = a[hi];
         int pivotLoc = lo;
@@ -218,6 +220,8 @@ public class Utils {
         // if partition value is equal to the kth position, 
         // return index of partitioning element 
         if (partition == k - 1) {
+            // System.out.println(recursionDepth);
+            // recursionDepth = 0;
             return partition; 
         }
             
@@ -231,6 +235,59 @@ public class Utils {
         else {
             return quickSelect(a, lo, partition - 1, k);
         } 
+    }
+
+    public static int hoareQuickSelect(Comparable[] a, int lo, int hi, int k) {
+
+        int[] gtlt = hoarePartition(a, lo, hi);
+
+        if (gtlt[1] < k - 1) {
+            hoareQuickSelect(a, gtlt[1]+1, hi, k);  
+        } else if (k - 1 < gtlt[0]) {
+            hoareQuickSelect(a, lo, gtlt[0]-1, k);
+        } 
+        
+        // System.out.println(recursionDepth);
+        // recursionDepth = 0;
+        return k-1;
+
+    }
+
+    private static int[] hoarePartition(Comparable[] a, int lo, int hi) {
+        recursionDepth++;
+
+        // Choose random pivot index
+        int pivotIdx =  ((int) (Math.random() * (hi - lo))) + lo;
+        exch(a, hi, pivotIdx);
+        Comparable pivotValue = a[hi];
+
+        int gt = lo;
+        int eq = lo;
+        int lt = hi;
+
+        while (eq <= lt) {
+            int compare = a[eq].compareTo(pivotValue);
+
+            if (compare == 1) {
+                exch(a, eq, gt);
+                gt++;
+                eq++;
+            } else if (compare == -1) {
+                exch(a, eq, lt);
+                lt--;
+            } else {
+                eq++;
+            }
+        }
+
+        int[] gtlt = new int[2];
+        gtlt[0] = gt;
+        gtlt[1] = lt;
+
+        return gtlt;
+        // 1 = this > that
+        // -1 = this < that
+        // 0 = this == that
     }
 
     public static int[][] groundTruth(float[][] corpusMatrix, int k) {

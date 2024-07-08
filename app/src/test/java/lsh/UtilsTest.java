@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.*;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 public class UtilsTest {
@@ -313,7 +314,7 @@ public class UtilsTest {
     }
 
 
-    @Test
+    @RepeatedTest(50)
     public void quickSelectTest() {
 
         Integer[] votes = new Integer[10];
@@ -327,12 +328,73 @@ public class UtilsTest {
         votes[7] = Integer.valueOf(21);
         votes[8] = Integer.valueOf(5);
         votes[9] = Integer.valueOf(8);
-        int partition = Utils.quickSelect(votes, 0, 9, 4); 
+        int partition = Utils.hoareQuickSelect(votes, 0, 9, 4); 
         int actualValue = votes[partition];
         assertEquals(7, actualValue);
 
         for (int i = partition; i < votes.length; i++) {
             assertTrue(votes[i] <= actualValue);
+        }
+
+        // -----
+
+        Integer[] votes2 = new Integer[20];
+        votes2[0] = Integer.valueOf(1);
+        votes2[1] = Integer.valueOf(-1);
+        votes2[2] = Integer.valueOf(2);
+        votes2[3] = Integer.valueOf(5);
+        votes2[4] = Integer.valueOf(1);
+        votes2[5] = Integer.valueOf(2);
+        votes2[6] = Integer.valueOf(3);
+        votes2[7] = Integer.valueOf(1);
+        votes2[8] = Integer.valueOf(1);
+        votes2[9] = Integer.valueOf(2);
+        votes2[10] = Integer.valueOf(1);
+        votes2[11] = Integer.valueOf(-10);
+        votes2[12] = Integer.valueOf(2);
+        votes2[13] = Integer.valueOf(3);
+        votes2[14] = Integer.valueOf(1);
+        votes2[15] = Integer.valueOf(2);
+        votes2[16] = Integer.valueOf(3);
+        votes2[17] = Integer.valueOf(-1);
+        votes2[18] = Integer.valueOf(-1);
+        votes2[19] = Integer.valueOf(3);
+        int partition2 = Utils.hoareQuickSelect(votes2, 0, 19, 6); 
+        int actualValue2 = votes2[partition2];
+        assertEquals(2, actualValue2);
+
+        for (int i = partition2; i < votes2.length; i++) {
+            assertTrue(votes2[i] <= actualValue2);
+        }
+
+        // ------
+        Integer[] votes3 = new Integer[20];
+        votes3[0] = Integer.valueOf(2);
+        votes3[1] = Integer.valueOf(2);
+        votes3[2] = Integer.valueOf(1);
+        votes3[3] = Integer.valueOf(1);
+        votes3[4] = Integer.valueOf(3);
+        votes3[5] = Integer.valueOf(1);
+        votes3[6] = Integer.valueOf(2);
+        votes3[7] = Integer.valueOf(2);
+        votes3[8] = Integer.valueOf(1);
+        votes3[9] = Integer.valueOf(2);
+        votes3[10] = Integer.valueOf(1);
+        votes3[11] = Integer.valueOf(3);
+        votes3[12] = Integer.valueOf(2);
+        votes3[13] = Integer.valueOf(3);
+        votes3[14] = Integer.valueOf(1);
+        votes3[15] = Integer.valueOf(2);
+        votes3[16] = Integer.valueOf(3);
+        votes3[17] = Integer.valueOf(1);
+        votes3[18] = Integer.valueOf(2);
+        votes3[19] = Integer.valueOf(3);
+        int partition3 = Utils.hoareQuickSelect(votes3, 0, 19, 6); 
+        int actualValue3 = votes3[partition3];
+        assertEquals(2, actualValue3);
+
+        for (int i = partition3; i < votes3.length; i++) {
+            assertTrue(votes3[i] <= actualValue3);
         }
 
     }
