@@ -99,31 +99,34 @@ public class App {
         for (String datastructureArgList : datastructureArgs) {
 
             String[] args = getArgs(datastructureArgList);
+
+            // Check if necessary to load datastructure (i.e if all specified configurations already have been computed)
+            if (!loadDatastructure(datastructure, args, searchStrategy, searchStrategyArgs)) {
+                String message = "All result files for algorithm configuration already exist. Skipping datastructure configuration: " + datastructure + Arrays.toString(args);
+                logger.info(message);
+                System.out.println("\n" + message);
+                continue;
+            }
+
+            // Load searcher
             ANNSearcher searcher = getSearcher(datastructure, args);
             if (searcher == null) {
                 continue;
             }
 
-            // //To focus profiling
-            // Scanner myScanner = new Scanner(System.in);
-            // logger.info("Ready for profiling");
-            // int myint = myScanner.nextInt();
-
+            // Benchmark searches
             for (String searchStrategyArgsList : searchStrategyArgs) {
                 String[] strategyArgs = getArgs(searchStrategyArgsList);
 
-                // Check if resultsfile already exists
-                String identifier = createIdentifier(datastructure, args, searchStrategy, strategyArgs);
-                String datasetName = getProperty("dataset").substring(0, getProperty("dataset").lastIndexOf("."));
-                String resultpath = RESULTSDIRECTORY + "/" + datasetName + "/" + strategyArgs[0];
-                File resultsFile = new File(resultpath + "/" + identifier + ".hdf5");
-                if (resultsFile.exists()) {
-                    logger.info("A result file of this configuration already exists. Skipping experiment.");
-                    System.out.println("\nA result file of this configuration already exists. Skipping experiment.");
+                logger.info("Benchmarking: " + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
+
+                // Check if results file already exists
+                if (resultsExist(datastructure, args, searchStrategy, strategyArgs)) {
+                    String message = "A result file of this algorithm configuration already exists. Skipping experiment.";
+                    logger.info(message);
+                    System.out.println("\n" + message);
                     continue;
                 }
-
-                logger.info("Benchmarking: " + datastructure + " " + Arrays.toString(args) + " - " + searchStrategy + " " + Arrays.toString(strategyArgs));
 
                 MicroBenchmark.Results results = null;
                 switch (searchStrategy) {
@@ -282,6 +285,28 @@ public class App {
             logger.error("Error creating a results file");
             return null;
         }  
+    }
+
+    private boolean loadDatastructure(String datastructure, String[] datastructureArgList, String searchStrategy, String[] searchStrategyArgs) {
+        boolean load = false;
+
+        // Check if all results files already exist
+        for (String searchStrategyArgsList : searchStrategyArgs) {
+            String[] strategyArgs = getArgs(searchStrategyArgsList);
+            if (!resultsExist(datastructure, datastructureArgList, searchStrategy, strategyArgs)) {
+                return true;
+            }
+        }
+        return load;
+    }
+
+    private boolean resultsExist(String datastructure, String[] datastructureArgList, String searchStrategy, String[] searchStrategyArgsList) {
+       
+        String identifier = createIdentifier(datastructure, datastructureArgList, searchStrategy, searchStrategyArgsList);
+        String datasetName = getProperty("dataset").substring(0, getProperty("dataset").lastIndexOf("."));
+        String resultpath = RESULTSDIRECTORY + "/" + datasetName + "/" + searchStrategyArgsList[0];
+        File resultsFile = new File(resultpath + "/" + identifier + ".hdf5");
+        return resultsFile.exists();
     }
 
     public static void main(String[] args) {
