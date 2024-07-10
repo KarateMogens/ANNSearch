@@ -199,7 +199,7 @@ public class ANNSearcherFactory {
         Future<?> finished = pool.submit(new BuildLSHTask(searchables, 0, L-1, pool, "", K, r, corpusMatrix));
         try {
             finished.get();
-            BuildForestTask.resetCount();
+            BuildLSHTask.resetCount();
         } catch (ExecutionException | InterruptedException e) {
             logger.error("Error constructing searchable LSH: K = " + K + ", L = " +  L + ", type = normal");
             System.exit(1);
