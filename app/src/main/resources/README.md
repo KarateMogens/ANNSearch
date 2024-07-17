@@ -1,6 +1,6 @@
 ## ANNSearchBuild
 
-This repository contains an executable build of the [ANNSearch implementation](https://github.com/KarateMogens/ANNSearch) created by Malte Helin Johnsen for his Master's thesis written in the spring of 2024 at ITU. This repository contains a complete build of the code as well as the smallest of the three datasets, Fashion-MNIST. 
+This directory contains an executable build of the algorithm implementations and benchmarking tool created by Malte Helin Johnsen for his Master's thesis written in the spring of 2024 at ITU. This repository contains a complete build of the code as well as the smallest of the three datasets, Fashion-MNIST. 
 
 ### Requirements
 - Java 11
