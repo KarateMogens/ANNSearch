@@ -328,7 +328,7 @@ public class UtilsTest {
         votes[7] = Integer.valueOf(21);
         votes[8] = Integer.valueOf(5);
         votes[9] = Integer.valueOf(8);
-        int partition = Utils.hoareQuickSelect(votes, 0, 9, 4); 
+        int partition = Utils.dijkstraQuickSelect(votes, 0, 9, 4); 
         int actualValue = votes[partition];
         assertEquals(7, actualValue);
 
@@ -359,7 +359,7 @@ public class UtilsTest {
         votes2[17] = Integer.valueOf(-1);
         votes2[18] = Integer.valueOf(-1);
         votes2[19] = Integer.valueOf(3);
-        int partition2 = Utils.hoareQuickSelect(votes2, 0, 19, 6); 
+        int partition2 = Utils.dijkstraQuickSelect(votes2, 0, 19, 6); 
         int actualValue2 = votes2[partition2];
         assertEquals(2, actualValue2);
 
@@ -389,7 +389,7 @@ public class UtilsTest {
         votes3[17] = Integer.valueOf(1);
         votes3[18] = Integer.valueOf(2);
         votes3[19] = Integer.valueOf(3);
-        int partition3 = Utils.hoareQuickSelect(votes3, 0, 19, 6); 
+        int partition3 = Utils.dijkstraQuickSelect(votes3, 0, 19, 6); 
         int actualValue3 = votes3[partition3];
         assertEquals(2, actualValue3);
 

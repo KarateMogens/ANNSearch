@@ -183,6 +183,7 @@ public class Utils {
     }
 
     private static int partition(Comparable[] a, int lo, int hi) {
+
         int piv =  ((int) (Math.random() * (hi - lo))) + lo;
         exch(a, hi, piv);
         Comparable pivotValue = a[hi];
@@ -235,21 +236,21 @@ public class Utils {
         } 
     }
 
-    public static int hoareQuickSelect(Comparable[] a, int lo, int hi, int k) {
+    public static int dijkstraQuickSelect(Comparable[] a, int lo, int hi, int k) {
 
-        int[] gtlt = hoarePartition(a, lo, hi);
+        int[] gtlt = dijkstraPartition(a, lo, hi);
 
         if (gtlt[1] < k - 1) {
-            hoareQuickSelect(a, gtlt[1]+1, hi, k);  
+            dijkstraQuickSelect(a, gtlt[1]+1, hi, k);  
         } else if (k - 1 < gtlt[0]) {
-            hoareQuickSelect(a, lo, gtlt[0]-1, k);
+            dijkstraQuickSelect(a, lo, gtlt[0]-1, k);
         } 
         
         return k-1;
 
     }
 
-    private static int[] hoarePartition(Comparable[] a, int lo, int hi) {
+    private static int[] dijkstraPartition(Comparable[] a, int lo, int hi) {
 
         // Choose random pivot index
         int pivotIdx =  ((int) (Math.random() * (hi - lo))) + lo;

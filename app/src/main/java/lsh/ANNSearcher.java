@@ -187,7 +187,7 @@ public class ANNSearcher {
         }
 
         // Pick only top candidates
-        int location = Utils.hoareQuickSelect(votes, 0, nonZeroVotes.size()-1, candidateSetSize);
+        int location = Utils.dijkstraQuickSelect(votes, 0, nonZeroVotes.size()-1, candidateSetSize);
         List<Integer> candidateSet = new LinkedList<>();
         for (int i = 0; i <= location; i++) {
             candidateSet.add(votes[i].getcIndex());
