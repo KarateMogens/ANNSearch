@@ -17,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Utils {
-    private static int recursionDepth;
     
     private static final Logger logger = LogManager.getLogger(Utils.class);
 
@@ -184,7 +183,6 @@ public class Utils {
     }
 
     private static int partition(Comparable[] a, int lo, int hi) {
-        recursionDepth++;
         int piv =  ((int) (Math.random() * (hi - lo))) + lo;
         exch(a, hi, piv);
         Comparable pivotValue = a[hi];
@@ -247,14 +245,11 @@ public class Utils {
             hoareQuickSelect(a, lo, gtlt[0]-1, k);
         } 
         
-        // System.out.println(recursionDepth);
-        // recursionDepth = 0;
         return k-1;
 
     }
 
     private static int[] hoarePartition(Comparable[] a, int lo, int hi) {
-        recursionDepth++;
 
         // Choose random pivot index
         int pivotIdx =  ((int) (Math.random() * (hi - lo))) + lo;
@@ -285,9 +280,6 @@ public class Utils {
         gtlt[1] = lt;
 
         return gtlt;
-        // 1 = this > that
-        // -1 = this < that
-        // 0 = this == that
     }
 
     public static int[][] groundTruth(float[][] corpusMatrix, int k) {
