@@ -1,6 +1,6 @@
 # ANNSearch Source Code
 
-This repository contains all source code for the ANNSearch implementation written by Malte Helin Johnsen for his Master's thesis written in the spring of 2024 at ITU. 
+This repository contains all source code for the ANNSearch implementation written by Malte Helin Johnsen for his [Master's thesis](https://github.com/KarateMogens/ANNSearch/blob/main/Masters%20Thesis%20-%20Malte%20Helin%20Johnsen.pdf) written in the spring of 2024 at ITU. 
 
 
 ### Requirements
